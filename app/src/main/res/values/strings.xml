@@ -19,7 +19,7 @@
     <string name="DefaultChannel">my_channel</string>
     <string name="DefaultText">My Android Super Message!</string>
     <string name="DefaultAuthenticationToken">your_authentication_token</string>
-    <string name="DefaultApplicationKey">gu9PcY</string>
+    <string name="DefaultApplicationKey">[YOUR_REALTIME_APPKEY]</string>
     <string name="DefaultConnectionMetadata">AndroidConnMeta</string>
     <string name="TextViewDefaultTextLog"/>
     <string name="ButtonLabelClear">Clear Log</string>
