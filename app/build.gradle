@@ -18,14 +18,12 @@ android {
         }
     }
 
-    packagingOptions {
-        exclude 'META-INF/LICENSE.txt'
-        exclude 'META-INF/NOTICE.txt'
-    }
 }
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
+    //compile project(':library')
+    compile 'co.realtime:messaging-android:2.1.30'
     compile 'com.android.support:appcompat-v7:21.0.3'
-    compile project(':library')
+    compile 'com.android.support:support-v4:21.0.3'
 }
