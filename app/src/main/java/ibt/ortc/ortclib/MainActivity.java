@@ -1,11 +1,29 @@
 package ibt.ortc.ortclib;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
+import android.support.v7.app.ActionBarActivity;
+import android.os.Bundle;
+import android.text.format.DateFormat;
+import android.text.method.ScrollingMovementMethod;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.TextView;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 import ibt.ortc.api.ChannelPermissions;
-import ibt.ortc.api.Ortc;
-import ibt.ortc.api.Presence;
 import ibt.ortc.api.OnDisablePresence;
 import ibt.ortc.api.OnEnablePresence;
 import ibt.ortc.api.OnPresence;
+import ibt.ortc.api.Ortc;
+import ibt.ortc.api.Presence;
 import ibt.ortc.extensibility.OnConnected;
 import ibt.ortc.extensibility.OnDisconnected;
 import ibt.ortc.extensibility.OnException;
@@ -17,31 +35,30 @@ import ibt.ortc.extensibility.OnUnsubscribed;
 import ibt.ortc.extensibility.OrtcClient;
 import ibt.ortc.extensibility.OrtcFactory;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
-import android.os.Bundle;
-import android.app.Activity;
-import android.text.format.DateFormat;
-import android.text.method.ScrollingMovementMethod;
-import android.view.Menu;
-import android.view.View;
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.TextView;
+public class MainActivity extends ActionBarActivity {
 
-public class MainActivity extends Activity {
-    private static final String defaultPrivateKey = "[YOUR_REALTIME_PRIVATE_KEY]";
     private static final boolean defaultNeedsAuthentication = false;
 
     private OrtcClient client;
     private int reconnectingTries = 0;
+    private static final int RESULT_SETTINGS = 1;
+
+    private String server;
+    private String appKey;
+    private String privateKey;
+    private String authToken;
+    private String connectionMetadata;
+    private boolean isCluster = true;
+    private String channel;
+    private String message;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        init();
 
         try {
             Ortc ortc = new Ortc();
@@ -52,8 +69,8 @@ public class MainActivity extends Activity {
 
             client = factory.createClient();
 
-            client.setApplicationContext(getApplicationContext());
-            client.setGoogleProjectId("your_google_project_id");
+            //client.setApplicationContext(getApplicationContext());
+            //client.setGoogleProjectId("your_google_project_id");
 
         } catch (Exception e) {
             log(String.format("ORTC CREATE ERROR: %s", e.toString()));
@@ -159,9 +176,70 @@ public class MainActivity extends Activity {
 
 
     @Override
-    protected void onStart(){
-        super.onStart();
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
     }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            startActivityForResult(new Intent(this,SettingsActivity.class),RESULT_SETTINGS);
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case RESULT_SETTINGS:
+                updateUserSettings();
+                break;
+
+        }
+    }
+
+    private void init(){
+
+        SharedPreferences sharedPrefs = PreferenceManager
+                .getDefaultSharedPreferences(this);
+
+        server = sharedPrefs.getString("server",getString(R.string.DefaultServer));
+        isCluster = sharedPrefs.getBoolean("isCluster",true);
+        authToken = sharedPrefs.getString("authToken",getString(R.string.DefaultAuthenticationToken));
+        appKey = sharedPrefs.getString("appKey",getString(R.string.DefaultApplicationKey));
+        privateKey = sharedPrefs.getString("privateKey",getString(R.string.DefaultPrivateKey));
+        connectionMetadata = sharedPrefs.getString("server",getString(R.string.DefaultConnectionMetadata));
+        channel = sharedPrefs.getString("channel",getString(R.string.DefaultChannel));
+        message = sharedPrefs.getString("message",getString(R.string.DefaultText));
+    }
+
+    private void updateUserSettings() {
+
+        SharedPreferences sharedPrefs = PreferenceManager
+                .getDefaultSharedPreferences(this);
+
+        server = sharedPrefs.getString("server",getString(R.string.DefaultServer));
+        isCluster = sharedPrefs.getBoolean("isCluster",true);
+        authToken = sharedPrefs.getString("authToken",getString(R.string.DefaultAuthenticationToken));
+        appKey = sharedPrefs.getString("appKey",getString(R.string.DefaultApplicationKey));
+        privateKey = sharedPrefs.getString("privateKey",getString(R.string.DefaultPrivateKey));
+        connectionMetadata = sharedPrefs.getString("connMetada",getString(R.string.DefaultConnectionMetadata));
+        channel = sharedPrefs.getString("channel",getString(R.string.DefaultChannel));
+        message = sharedPrefs.getString("message",getString(R.string.DefaultText));
+
+    }
+
 
     public void clearClickEventHandler(View v) {
         TextView textViewLog = (TextView) findViewById(R.id.TextViewLog);
@@ -169,12 +247,10 @@ public class MainActivity extends Activity {
         textViewLog.scrollTo(0, 0);
     }
 
-    public void subscribeClickEventHandler(View v) {
+    private void subscribe() {
         log("Subscribing...");
 
-        EditText editTextChannel = (EditText) findViewById(R.id.EditTextChannel);
-
-        client.subscribeWithNotifications(editTextChannel.getText().toString(), true,
+        client.subscribe(channel, true,
                 new OnMessage() {
                     public void run(OrtcClient sender, String channel,
                                     String message) {
@@ -189,31 +265,20 @@ public class MainActivity extends Activity {
                 });
     }
 
-    public void unsubscribeClickEventHandler(View v) {
+    private void unsubscribe() {
         log("Unsubscribing...");
-
-        EditText editTextChannel = (EditText) findViewById(R.id.EditTextChannel);
-        client.unsubscribe(editTextChannel.getText().toString());
+        client.unsubscribe(channel);
     }
 
     public void sendClickEventHandler(View v) {
-        EditText editTextMessage = (EditText) findViewById(R.id.EditTextMessage);
-        EditText editTextChannel = (EditText) findViewById(R.id.EditTextChannel);
-
-        String channel = editTextChannel.getText().toString();
-        String message = editTextMessage.getText().toString();
 
         log(String.format("Sending %s to %s...", message, channel));
 
         client.send(channel, message);
     }
 
-    public void connectClickEventHandler(View v) {
-        EditText editTextServer = (EditText) findViewById(R.id.EditTextServer);
-        EditText editTextApplicationKey = (EditText) findViewById(R.id.EditTextApplicationKey);
-        EditText editTextAuthenticationToken = (EditText) findViewById(R.id.EditTextAuthenticationToken);
-        EditText editTextConnectionMetadata = (EditText) findViewById(R.id.EditTextConnectionMetadata);
-        CheckBox checkBoxIsCluster = (CheckBox) findViewById(R.id.CheckBoxIsCluster);
+    private void connect() {
+
 
         if (defaultNeedsAuthentication) {
             try {
@@ -229,7 +294,7 @@ public class MainActivity extends Activity {
 
                 log("Authenticating...");
 
-                if (!Ortc.saveAuthentication(editTextServer.getText().toString(), checkBoxIsCluster.isChecked(), editTextAuthenticationToken.getText().toString(), false, editTextApplicationKey.getText().toString(), 14000, defaultPrivateKey, permissions)) {
+                if (!Ortc.saveAuthentication(server, isCluster, authToken, false, appKey, 14000, privateKey, permissions)) {
                     log("Unable to authenticate");
                 }
                 else {
@@ -240,36 +305,31 @@ public class MainActivity extends Activity {
             }
         }
 
-        if (checkBoxIsCluster.isChecked()) {
-            client.setClusterUrl(editTextServer.getText().toString());
+        if (isCluster) {
+            client.setClusterUrl(server);
         }
         else {
-            client.setUrl(editTextServer.getText().toString());
+            client.setUrl(server);
         }
 
-        client.setConnectionMetadata(editTextConnectionMetadata.getText().toString());
+        client.setConnectionMetadata(connectionMetadata);
 
         log("Connecting...");
-        client.connect(editTextApplicationKey.getText().toString(), editTextAuthenticationToken.getEditableText().toString());
+        client.connect(appKey, authToken);
     }
 
-    public void disconnectClickEventHandler(View v) {
+    private void disconnect() {
         log("Disconnecting...");
         client.disconnect();
     }
 
     public void presenceClickEventHandler(View v) {
-        EditText editTextServer = (EditText) findViewById(R.id.EditTextServer);
-        EditText editTextApplicationKey = (EditText) findViewById(R.id.EditTextApplicationKey);
-        EditText editTextAuthenticationToken = (EditText) findViewById(R.id.EditTextAuthenticationToken);
-        EditText editTextChannel = (EditText) findViewById(R.id.EditTextChannel);
-        CheckBox checkBoxIsCluster = (CheckBox) findViewById(R.id.CheckBoxIsCluster);
 
         Ortc.presence(
-                editTextServer.getText().toString(),
-                checkBoxIsCluster.isChecked(),
-                editTextApplicationKey.getText().toString(),
-                editTextAuthenticationToken.getText().toString(), editTextChannel.getText().toString(), new OnPresence() {
+                server,
+                isCluster,
+                appKey,
+                authToken, channel, new OnPresence() {
                     @Override
                     public void run(Exception error, Presence presence) {
                         final Exception exception = error;
@@ -294,18 +354,14 @@ public class MainActivity extends Activity {
                 });
     }
 
-    public void enablePresenceClickEventHandler(View v) {
-        EditText editTextServer = (EditText) findViewById(R.id.EditTextServer);
-        EditText editTextApplicationKey = (EditText) findViewById(R.id.EditTextApplicationKey);
-        EditText editTextChannel = (EditText) findViewById(R.id.EditTextChannel);
-        CheckBox checkBoxIsCluster = (CheckBox) findViewById(R.id.CheckBoxIsCluster);
+    private void enablePresence() {
 
         Ortc.enablePresence(
-                editTextServer.getText().toString(),
-                checkBoxIsCluster.isChecked(),
-                editTextApplicationKey.getText().toString(),
-                defaultPrivateKey,
-                editTextChannel.getText().toString(),
+                server,
+                isCluster,
+                appKey,
+                privateKey,
+                channel,
                 true,
                 new OnEnablePresence() {
                     @Override
@@ -326,18 +382,14 @@ public class MainActivity extends Activity {
                 });
     }
 
-    public void disablePresenceClickEventHandler(View v) {
-        EditText editTextServer = (EditText) findViewById(R.id.EditTextServer);
-        EditText editTextApplicationKey = (EditText) findViewById(R.id.EditTextApplicationKey);
-        EditText editTextChannel = (EditText) findViewById(R.id.EditTextChannel);
-        CheckBox checkBoxIsCluster = (CheckBox) findViewById(R.id.CheckBoxIsCluster);
+    private void disablePresence() {
 
         Ortc.disablePresence(
-                editTextServer.getText().toString(),
-                checkBoxIsCluster.isChecked(),
-                editTextApplicationKey.getText().toString(),
-                defaultPrivateKey,
-                editTextChannel.getText().toString(),
+                server,
+                isCluster,
+                appKey,
+                privateKey,
+                channel,
                 new OnDisablePresence() {
                     @Override
                     public void run(Exception error, String result) {
@@ -346,9 +398,9 @@ public class MainActivity extends Activity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                if(exception != null){
+                                if (exception != null) {
                                     log(String.format("Error: %s", exception.getMessage()));
-                                }else{
+                                } else {
                                     log(resultText);
                                 }
                             }
@@ -361,5 +413,30 @@ public class MainActivity extends Activity {
     private void log(String text) {
         TextView t = ((TextView) findViewById(R.id.TextViewLog));
         t.setText(String.format("%s - %s\n%s", DateFormat.format("HH:mm:ss", new java.util.Date()), text, t.getText()));
+    }
+
+
+    public void connect(View view) {
+        connect();
+    }
+
+    public void disconnect(View view) {
+        disconnect();
+    }
+
+    public void subscribe(View view) {
+        subscribe();
+    }
+
+    public void unsubscribe(View view) {
+        unsubscribe();
+    }
+
+    public void enablePresence(View view) {
+        enablePresence();
+    }
+
+    public void disablePresence(View view) {
+        disablePresence();
     }
 }
