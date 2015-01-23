@@ -915,7 +915,7 @@ public abstract class OrtcClient {
 	 * @return boolean True if the channel is subscribed otherwise false
 	 */
 	public Boolean isSubscribed(String channel) {
-		Boolean result = null;
+		Boolean result = false;
 
 		/*
 		 * Sanity checks
