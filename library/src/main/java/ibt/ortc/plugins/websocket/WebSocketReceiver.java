@@ -60,11 +60,11 @@ public class WebSocketReceiver
 					}
 					messageBytes.clear();
 				}
-				else if (frameStart == true){
-					messageBytes.add((byte)b);
-				}
 				else if (b == -1) {
 					handleError();
+				}
+				else if (frameStart == true) {
+					messageBytes.add((byte)b);
 				}
 			}
 			catch (IOException ioe) {
