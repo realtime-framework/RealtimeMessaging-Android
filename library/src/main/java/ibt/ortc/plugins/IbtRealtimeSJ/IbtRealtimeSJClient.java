@@ -1,13 +1,11 @@
 package ibt.ortc.plugins.IbtRealtimeSJ;
 
 import ibt.ortc.api.Strings;
-import ibt.ortc.extensibility.CharEscaper;
 import ibt.ortc.extensibility.EventEnum;
 import ibt.ortc.extensibility.OrtcClient;
 import ibt.ortc.extensibility.exception.OrtcNotConnectedException;
 import ibt.ortc.plugins.IbtRealtimeSJ.OrtcServerErrorException.OrtcServerErrorOperation;
 import ibt.ortc.plugins.websocket.WebSocket;
-import ibt.ortc.plugins.websocket.WebSocketConnection;
 import ibt.ortc.plugins.websocket.WebSocketEventHandler;
 import ibt.ortc.plugins.websocket.WebSocketException;
 import ibt.ortc.plugins.websocket.WebSocketMessage;
@@ -44,7 +42,7 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 		boolean ex = false;
 		try {
 			URI connectionUri = new URI(connectionUrl);
-			socket = new WebSocketConnection(connectionUri);
+			socket = new WebSocket(connectionUri);
 			addSocketEventsListener();
 
 			socket.connect();
@@ -59,7 +57,7 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 						(OrtcClient) this,
 						new OrtcNotConnectedException(
 								"Could not connect. Check if the server is running correctly."));
-				if (isConnecting) {
+				if (isReconnecting) {
 					isReconnecting = true;
 					raiseOrtcEvent(EventEnum.OnReconnecting, (OrtcClient) this);
 				}
@@ -134,6 +132,11 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 							case Error:
 								onError(ortcMessage);
 								break;
+                            case Close:
+                                 try {
+                                   socket.close(true);
+                                 } catch (WebSocketException e) {}
+                                 break;
 							}
 						}
 					}
@@ -159,8 +162,18 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 					raiseOrtcEvent(EventEnum.OnDisconnected, sender);
 				}
 			}
-			
-			@Override
+
+            @Override
+            public void onPing() {
+
+            }
+
+            @Override
+            public void onPong() {
+
+            }
+
+            @Override
 			public void onException(Exception error) {
 				raiseOrtcEvent(EventEnum.OnException, sender,error);
 			}
