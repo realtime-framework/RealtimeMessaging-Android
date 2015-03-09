@@ -25,6 +25,7 @@ public class OrtcMessage {
     private static final String MULTI_PART_MESSAGE_PATTERN = "^(.[^_]*)_(.[^-]*)-(.[^_]*)_([\\s\\S]*?)$";
     private static final String EXCEPTION_PATTERN = "^\\\\\"ex\\\\\":(\\{.*\\})$";
     private static final String PERMISSIONS_PATTERN = "^\\\\\"up\\\\\":{1}(.*),\\\\\"set\\\\\":(.*)$";
+    private static final String CLOSE_PATTERN = "^c\\[\\d\\d\\d\\d,\"([\\s\\S])*\"]$";
 
     private static Pattern operationPattern;
     private static Pattern subscribedPattern;
@@ -33,6 +34,7 @@ public class OrtcMessage {
     private static Pattern unsubscribedPattern;
     private static Pattern exceptionPattern;
     private static Pattern permissionsPattern;
+    private static Pattern closePattern;
 
     private OrtcOperation operation;
     private String message;
@@ -48,9 +50,10 @@ public class OrtcMessage {
             subscribedPattern = Pattern.compile(CHANNEL_PATTERN);
             receivedPattern = Pattern.compile(RECEIVED_PATTERN);
             multipartMessagePattern = Pattern.compile(MULTI_PART_MESSAGE_PATTERN);
-        unsubscribedPattern = Pattern.compile(CHANNEL_PATTERN);
+            unsubscribedPattern = Pattern.compile(CHANNEL_PATTERN);
             exceptionPattern = Pattern.compile(EXCEPTION_PATTERN);
             permissionsPattern = Pattern.compile(PERMISSIONS_PATTERN);
+            closePattern = Pattern.compile(CLOSE_PATTERN);
 
         operationIndex.put("ortc-validated", OrtcOperation.Validated);
         operationIndex.put("ortc-subscribed", OrtcOperation.Subscribed);
@@ -113,8 +116,13 @@ public class OrtcMessage {
                     messageTotalParts = -1;
                 }
             } else {
-                // CAUSE: Prefer String.format to +
-                throw new IOException(String.format("Invalid message format: %s", message));
+                matcher = closePattern.matcher(message);
+                if (matcher != null && matcher.matches()){
+                    operation = OrtcOperation.Close;
+                }
+                else {
+                    throw new IOException(String.format("Invalid message format: %s", message));
+                }
             }
         // CAUSE: Possible null pointer dereference
         } else {

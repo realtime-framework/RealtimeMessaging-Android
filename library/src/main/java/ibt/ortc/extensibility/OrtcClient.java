@@ -1194,7 +1194,9 @@ public abstract class OrtcClient {
 				if (channelPermission != null && channelPermission.first) {
 					subscribe(channelName, channelPermission.second,
 							subscribedChannel.isWithNotification());
-				}
+				} else{
+                    subscribedChannel.setSubscribing(false);
+                }
 			} else {
 				channelsToRemove.add(channelName);
 			}
