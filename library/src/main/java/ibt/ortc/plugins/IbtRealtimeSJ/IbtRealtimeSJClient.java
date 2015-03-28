@@ -57,7 +57,7 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 						(OrtcClient) this,
 						new OrtcNotConnectedException(
 								"Could not connect. Check if the server is running correctly."));
-				if (isReconnecting) {
+				if (isConnecting || isReconnecting) {
 					isReconnecting = true;
 					raiseOrtcEvent(EventEnum.OnReconnecting, (OrtcClient) this);
 				}
