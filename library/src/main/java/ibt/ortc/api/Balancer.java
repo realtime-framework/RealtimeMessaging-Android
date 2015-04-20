@@ -169,6 +169,7 @@ public class Balancer{
             connection = (HttpURLConnection) url.openConnection();
             connection.setReadTimeout(1000*15);
             connection.setRequestProperty("user-agent", UserAgent);
+			connection.setUseCaches(false);
 		
             BufferedReader rd = null;
             try {

@@ -58,6 +58,7 @@ public class RestWebservice {
 
     try {
       connection = (HttpURLConnection) url.openConnection();
+      connection.setUseCaches(false);
       InputStream responseBody;
       if (connection.getResponseCode() != 200 && connection.getResponseCode() != -1) {
         responseBody = connection.getErrorStream();
@@ -88,6 +89,7 @@ public class RestWebservice {
 
     try {
       connection = (HttpsURLConnection) url.openConnection();
+      connection.setUseCaches(false);
       BufferedReader rd = null;
 
       try {
@@ -134,6 +136,7 @@ public class RestWebservice {
       connection = (HttpURLConnection) url.openConnection();
       connection.setRequestMethod("POST");
       connection.setDoOutput(true);
+      connection.setUseCaches(false);
 
       OutputStreamWriter wr = null;
       try {
@@ -198,6 +201,7 @@ public class RestWebservice {
       connection = (HttpsURLConnection) url.openConnection();
       connection.setRequestMethod("POST");
       connection.setDoOutput(true);
+      connection.setUseCaches(false);
 
       OutputStreamWriter wr = null;
       try {
