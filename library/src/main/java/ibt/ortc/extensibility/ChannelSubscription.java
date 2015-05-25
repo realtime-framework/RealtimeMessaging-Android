@@ -102,7 +102,7 @@ public class ChannelSubscription {
 		if(this.isWithPayload){
 			this.onMessageWithPayload.run(sender, channel, message, payload);
 		} else {
-			this.onMessage.run(sender, channel, message);		
+			this.onMessage.run(sender, channel, message);
 		}
 	}
 	

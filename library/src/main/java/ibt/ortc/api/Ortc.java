@@ -5,6 +5,7 @@
 package ibt.ortc.api;
 
 import ibt.ortc.extensibility.OnMessage;
+import ibt.ortc.extensibility.OnMessageWithPayload;
 import ibt.ortc.extensibility.OrtcFactory;
 
 import java.io.IOException;
