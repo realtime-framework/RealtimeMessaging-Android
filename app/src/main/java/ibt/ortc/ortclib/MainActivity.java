@@ -28,6 +28,7 @@ import ibt.ortc.extensibility.OnConnected;
 import ibt.ortc.extensibility.OnDisconnected;
 import ibt.ortc.extensibility.OnException;
 import ibt.ortc.extensibility.OnMessage;
+import ibt.ortc.extensibility.OnMessageWithPayload;
 import ibt.ortc.extensibility.OnReconnected;
 import ibt.ortc.extensibility.OnReconnecting;
 import ibt.ortc.extensibility.OnSubscribed;
@@ -68,10 +69,21 @@ public class MainActivity extends ActionBarActivity {
             factory = ortc.loadOrtcFactory("IbtRealtimeSJ");
 
             client = factory.createClient();
+            client.setApplicationContext(getApplicationContext());
+            client.setGoogleProjectId("your_project_id");
 
-            //client.setApplicationContext(getApplicationContext());
-            //client.setGoogleProjectId("your_google_project_id");
-
+            Ortc.setOnPushNotification(new OnMessage() {
+                @Override
+                public void run(OrtcClient sender, String channel, String message) {
+                    final String subscribedChannel = channel;
+                    final String messageReceived = message;
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            log(String.format("Push on channel %s: %s", subscribedChannel, messageReceived));
+                        }
+                    });
+                }
+            });
         } catch (Exception e) {
             log(String.format("ORTC CREATE ERROR: %s", e.toString()));
         }
@@ -250,7 +262,7 @@ public class MainActivity extends ActionBarActivity {
     private void subscribe() {
         log("Subscribing...");
 
-        client.subscribe(channel, true,
+        client.subscribeWithNotifications(channel, true,
                 new OnMessage() {
                     public void run(OrtcClient sender, String channel,
                                     String message) {
