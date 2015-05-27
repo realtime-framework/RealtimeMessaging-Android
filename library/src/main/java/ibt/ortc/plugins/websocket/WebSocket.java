@@ -113,6 +113,11 @@ public class WebSocket
 				buffer[pos] = (byte) b;
 				pos += 1;
 
+				if (b == -1) //connection drop during handshake, exiting handshake loop
+				{
+					throw new WebSocketException("error during handshake", null);
+				}
+
 				if (buffer[pos - 1] == 0x0A && buffer[pos - 2] == 0x0D) {
 					String line = new String(buffer, "UTF-8");
 					if (line.trim().equals("")) {
