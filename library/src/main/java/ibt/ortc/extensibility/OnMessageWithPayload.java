@@ -9,7 +9,7 @@ import java.util.Map;
  * @author IBT
  *
  */
-public interface OnMessageWithPayload {
+public interface OnMessageWithPayload{
 	/**
 	 * Fired when a message was received in the specified channel
 	 * @param sender Ortc client instance that fired the event

@@ -1,5 +1,6 @@
 package ibt.ortc.ortclib;
 
+import android.app.ActivityManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
@@ -53,11 +54,48 @@ public class MainActivity extends ActionBarActivity {
     private boolean isCluster = true;
     private String channel;
     private String message;
+    private static boolean inForeground;
+
+    public static boolean isInForeground() {
+        return inForeground;
+    }
+
+    public static void setInForeground(boolean inForeground) {
+        MainActivity.inForeground = inForeground;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        MainActivity.setInForeground(true);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        MainActivity.setInForeground(false);
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Intent intent = getIntent();
+
+        String channel = intent.getStringExtra("channel");
+        String message = intent.getStringExtra("message");
+        String payload = intent.getStringExtra("payload");
+
+        if (channel != null && message != null){
+            if (payload != null) {
+                log(String.format("Push on channel %s: %s payload: %s", channel, message, payload));
+            }else{
+                log(String.format("Push on channel %s: %s", channel, message));
+            }
+        }
+
 
         init();
 
@@ -70,16 +108,21 @@ public class MainActivity extends ActionBarActivity {
 
             client = factory.createClient();
             client.setApplicationContext(getApplicationContext());
-            client.setGoogleProjectId("your_project_id");
+            client.setGoogleProjectId("[your google project id]");
 
-            Ortc.setOnPushNotification(new OnMessage() {
+            Ortc.setOnPushNotification(new OnMessageWithPayload() {
                 @Override
-                public void run(OrtcClient sender, String channel, String message) {
+                public void run(OrtcClient sender, String channel, String message, Map<String, Object> payload) {
                     final String subscribedChannel = channel;
                     final String messageReceived = message;
+                    final Map<String, Object> payloadReceived = payload;
                     runOnUiThread(new Runnable() {
                         public void run() {
-                            log(String.format("Push on channel %s: %s", subscribedChannel, messageReceived));
+                            if (payloadReceived != null) {
+                                log(String.format("Push on channel %s: %s payload: %s", subscribedChannel, messageReceived, payloadReceived.toString()));
+                            }else{
+                                log(String.format("Push on channel %s: %s", subscribedChannel, messageReceived));
+                            }
                         }
                     });
                 }
@@ -87,6 +130,8 @@ public class MainActivity extends ActionBarActivity {
         } catch (Exception e) {
             log(String.format("ORTC CREATE ERROR: %s", e.toString()));
         }
+
+
 
         if (client != null) {
             try {
@@ -217,14 +262,13 @@ public class MainActivity extends ActionBarActivity {
             case RESULT_SETTINGS:
                 updateUserSettings();
                 break;
-
         }
     }
 
     private void init(){
 
         SharedPreferences sharedPrefs = PreferenceManager
-                .getDefaultSharedPreferences(this);
+                .getDefaultSharedPreferences(getApplicationContext());
 
         server = sharedPrefs.getString("server",getString(R.string.DefaultServer));
         isCluster = sharedPrefs.getBoolean("isCluster",true);
@@ -239,7 +283,7 @@ public class MainActivity extends ActionBarActivity {
     private void updateUserSettings() {
 
         SharedPreferences sharedPrefs = PreferenceManager
-                .getDefaultSharedPreferences(this);
+                .getDefaultSharedPreferences(getApplicationContext());
 
         server = sharedPrefs.getString("server",getString(R.string.DefaultServer));
         isCluster = sharedPrefs.getBoolean("isCluster",true);

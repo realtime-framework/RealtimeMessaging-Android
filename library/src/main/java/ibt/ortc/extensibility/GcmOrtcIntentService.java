@@ -92,30 +92,35 @@ public class GcmOrtcIntentService extends Service {
 								} else {
 									if(oc.applicationKey.equals(appkey)){
 										ChannelSubscription subscription = oc.subscribedChannels.get(channel);
-										if(subscription!=null && ( Ortc.getOnPushNotification() == null || (oc.isConnected && !oc.isReconnecting))){
+										if(subscription !=null && oc.isConnected && !oc.isReconnecting){
 											if(subscription.isWithNotification()){
+
 												String messId = ortcMessage.getMessageId();
 												if(messId!=null && oc.multiPartMessagesBuffer.containsKey(messId)){
 													continue;
 												}
+												pushNotificationHandlerExecuted = true;
 												oc.raiseOrtcEvent(EventEnum.OnReceived, ortcMessage.getMessageChannel(),
 														ortcMessage.getMessage(), messId,
 														ortcMessage.getMessagePart(), ortcMessage.getMessageTotalParts(), payload);
-											}
-										}else if(!pushNotificationHandlerExecuted && Ortc.getOnPushNotification() != null){
-											if(!IDS.containsKey(ortcMessage.getMessageId())){
 
-												if(ortcMessage.getMessageId() != null && !ortcMessage.getMessageId().equals(""))
-												{
-													this.setOnQueue(ortcMessage.getMessageId());
-												}
-												pushNotificationHandlerExecuted = true;
-												Ortc.getOnPushNotification().run(null, ortcMessage.getMessageChannel(), ortcMessage.getMessage());
 											}
 										}
 									}
 								}
 							}
+
+							if(!pushNotificationHandlerExecuted && Ortc.getOnPushNotification() != null){
+								if(!IDS.containsKey(ortcMessage.getMessageId())){
+
+									if(ortcMessage.getMessageId() != null && !ortcMessage.getMessageId().equals(""))
+									{
+										this.setOnQueue(ortcMessage.getMessageId());
+									}
+									Ortc.getOnPushNotification().run(null, ortcMessage.getMessageChannel(), ortcMessage.getMessage(), payload);
+								}
+							}
+
 							for(Integer clientId : clientsToRemove){
 								ortcs.remove(clientId);
 							}

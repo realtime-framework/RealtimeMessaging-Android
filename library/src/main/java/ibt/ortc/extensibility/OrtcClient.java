@@ -375,11 +375,11 @@ public abstract class OrtcClient {
 			}
 		}else{
 			stopHeartBeatInterval();
-			/*if (appContext != null && !googleProjectId.isEmpty()
+			if (appContext != null && !googleProjectId.isEmpty()
 					&& !isDisconnecting) {
 				this.intentService.removeServiceOrtcClient(this);
-				this.appContext.unbindService(this.intentServiceConnection);
-			}*/
+				//this.appContext.unbindService(this.intentServiceConnection);
+			}
 			this.disconnectIntern();
 		}
 	}
@@ -766,6 +766,8 @@ public abstract class OrtcClient {
 			subscribedChannel.setSubscribeOnReconnected(false);
 			unsubscribe(channel, true, subscribedChannel.isWithNotification());
 		}
+
+		//subscribedChannels.remove(channel);
 	}
 
 	protected abstract void unsubscribe(String channel, boolean isValid,
@@ -1268,6 +1270,8 @@ public abstract class OrtcClient {
 		if (onUnsubscribed != null) {
 			onUnsubscribed.run(sender, channel);
 		}
+
+		subscribedChannels.remove(channel);
 	}
 
 	private void raiseOnReceived(Object... args) {
