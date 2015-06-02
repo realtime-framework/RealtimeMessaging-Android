@@ -4,6 +4,8 @@
  */
 package ibt.ortc.extensibility;
 
+import java.util.Map;
+
 /**
  * Represents the Ortc event when a message was received in the specified channel
  *  
@@ -18,5 +20,6 @@ public interface OnMessage {
 	 * @param channel Channel where the message was received
 	 * @param message Content of the received message
 	 */
+
 	public void run(OrtcClient sender, String channel, String message);
 }

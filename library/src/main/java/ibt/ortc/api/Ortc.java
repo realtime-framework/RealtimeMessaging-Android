@@ -254,7 +254,7 @@ import java.util.Set;
  */
 public class Ortc {
 	
-	private static OnMessage onPushNotification;
+	private static OnMessageWithPayload onPushNotification;
 	
 	public Ortc() {
 	}
@@ -717,7 +717,7 @@ public class Ortc {
 	 * Returns the on message event to be executed when a push notification is received and there is a Realtime Client that is not connected
 	 * @return onPushNotification
 	 */
-	public static OnMessage getOnPushNotification() {
+	public static OnMessageWithPayload getOnPushNotification() {
 		return onPushNotification;
 	}
 
@@ -726,7 +726,10 @@ public class Ortc {
 	 * @param onPushNotification
 	 * 			Executed when a notification is received and there is a Realtime Client that is not connected 
 	 */
-	public static void setOnPushNotification(OnMessage onPushNotification) {
+	public static void setOnPushNotification(OnMessageWithPayload onPushNotification) {
 		Ortc.onPushNotification = onPushNotification;
 	}
+
+
+
 }
