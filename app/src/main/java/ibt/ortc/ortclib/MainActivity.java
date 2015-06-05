@@ -1,6 +1,5 @@
 package ibt.ortc.ortclib;
 
-import android.app.ActivityManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
@@ -8,11 +7,10 @@ import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.TextView;
 
 import java.util.HashMap;
@@ -32,6 +30,7 @@ import ibt.ortc.extensibility.OnMessage;
 import ibt.ortc.extensibility.OnMessageWithPayload;
 import ibt.ortc.extensibility.OnReconnected;
 import ibt.ortc.extensibility.OnReconnecting;
+import ibt.ortc.extensibility.OnRegistrationId;
 import ibt.ortc.extensibility.OnSubscribed;
 import ibt.ortc.extensibility.OnUnsubscribed;
 import ibt.ortc.extensibility.OrtcClient;
@@ -108,7 +107,21 @@ public class MainActivity extends ActionBarActivity {
 
             client = factory.createClient();
             client.setApplicationContext(getApplicationContext());
-            client.setGoogleProjectId("[your google project id]");
+
+            // Use this method if you have implemented a backend to store your user's GCM registration ids
+            //RegistrationIdRemoteStore.getRegistrationIdFromBackend(getApplicationContext(), client);
+
+            OrtcClient.setOnRegistrationId(new OnRegistrationId() {
+                @Override
+                public void run(String registrationId) {
+                    Log.i("REG", "GCM Registration ID: " + registrationId);
+
+                    // Use this method if you have implemented a backend to store your user's GCM registration ids
+                    //RegistrationIdRemoteStore.setRegistrationIdToBackend(getApplicationContext(), registrationId);
+                }
+            });
+
+            client.setGoogleProjectId("[enter your GCM project id]");
 
             Ortc.setOnPushNotification(new OnMessageWithPayload() {
                 @Override

@@ -51,6 +51,7 @@ public abstract class OrtcClient {
 	protected static final int MAX_CHANNEL_SIZE = 100;
 	public static final int MAX_CONNECTION_METADATA_SIZE = 256;
 	protected static final int CONNECTION_TIMEOUT_DEFAULT_VALUE = 5000;
+	private static OnRegistrationId onRegistrationId;
 
 	// ========== Constants ==========
 
@@ -1089,6 +1090,29 @@ public abstract class OrtcClient {
 	 */
 	public void setGoogleProjectId(String googleProjectId) {
 		this.googleProjectId = googleProjectId;
+	}
+
+	/**
+	 * Sets the Registration ID in GCM. Not necessary if you are not going to use
+	 * ORTC with Google Cloud Messaging.
+	 *
+	 * @param registrationId
+	 *            Registration Id for GCM device token
+	 */
+	public void setRegistrationId(String registrationId) {
+		this.registrationId = registrationId;
+	}
+
+	public String getRegistrationId() {
+		return this.registrationId;
+	}
+
+	public static OnRegistrationId getOnRegistrationId() {
+		return onRegistrationId;
+	}
+
+	public static void setOnRegistrationId(OnRegistrationId onRegistrationId) {
+		OrtcClient.onRegistrationId = onRegistrationId;
 	}
 
 	// ========== Getters and Setters ==========
