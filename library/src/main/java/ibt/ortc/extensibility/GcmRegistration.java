@@ -1,5 +1,6 @@
 package ibt.ortc.extensibility;
 
+import ibt.ortc.api.Ortc;
 import ibt.ortc.extensibility.exception.OrtcGcmException;
 
 import java.io.IOException;
@@ -25,11 +26,15 @@ class GcmRegistration {
 	protected static void getRegistrationId(OrtcClient ortcClient){
 		if (checkPlayServices(ortcClient)) {
             gcm = GoogleCloudMessaging.getInstance(ortcClient.appContext);
-            String regid = getRegistrationId(ortcClient.appContext);    
-            ortcClient.registrationId = regid;
-            if (regid.isEmpty()) {
-                registerInBackground(ortcClient);
+
+            if (ortcClient.registrationId.isEmpty()){
+                String regid = getRegistrationId(ortcClient.appContext);
+                ortcClient.registrationId = regid;
+                if (regid.isEmpty()) {
+                    registerInBackground(ortcClient);
+                }
             }
+
         } else {
         	ortcClient.raiseOrtcEvent(EventEnum.OnException, ortcClient, new OrtcGcmException("No valid Google Play Services APK found."));
         }
@@ -76,6 +81,11 @@ class GcmRegistration {
         if (registeredVersion != currentVersion) {
             return "";
         }
+
+        if (OrtcClient.getOnRegistrationId() != null){
+            OrtcClient.getOnRegistrationId().run(registrationId);
+        }
+
         return registrationId;
     }
 
@@ -107,6 +117,10 @@ class GcmRegistration {
                     // 'from' address in the message.
 
                     // Persist the regID - no need to register again.
+                    if (OrtcClient.getOnRegistrationId() != null){
+                        OrtcClient.getOnRegistrationId().run(regid);
+                    }
+
                     storeRegistrationId(ortcClient.appContext, regid);
                 } catch (IOException ex) {
                     // If there is an error, don't just keep trying to register.
