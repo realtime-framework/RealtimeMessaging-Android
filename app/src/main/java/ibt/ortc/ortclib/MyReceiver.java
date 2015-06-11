@@ -61,10 +61,11 @@ public class MyReceiver extends BroadcastReceiver {
                         displayNotification(context, ortcMessage.getMessageChannel(), ortcMessage.getMessage(), payload);
                     }
 
-                } catch (IOException e) {
+                } catch (Exception e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
+
             }
         }
     }

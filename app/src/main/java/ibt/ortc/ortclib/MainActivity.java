@@ -125,7 +125,7 @@ public class MainActivity extends ActionBarActivity {
 
             Ortc.setOnPushNotification(new OnMessageWithPayload() {
                 @Override
-                public void run(OrtcClient sender, String channel, String message, Map<String, Object> payload) {
+                public void run(OrtcClient sender, String channel, String message, Map payload) {
                     final String subscribedChannel = channel;
                     final String messageReceived = message;
                     final Map<String, Object> payloadReceived = payload;
