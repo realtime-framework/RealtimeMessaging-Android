@@ -1,3 +1,7 @@
+/**
+ * @fileoverview This file contains the definition of the on message event interface
+ * @author ORTC team members (ortc@ibt.pt)
+ */
 package ibt.ortc.extensibility;
 
 import java.util.Map;
@@ -17,5 +21,5 @@ public interface OnMessageWithPayload{
 	 * @param message Content of the received message
 	 * @param payload Content of the payload (received with GCM notification)
 	 */
-	public void run(OrtcClient sender, String channel, String message, Map<String, Object> payload);
+	public void run(OrtcClient sender, String channel, String message, Map payload);
 }
