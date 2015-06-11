@@ -15,13 +15,3 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
-
--keepattributes Annotation,SourceFile,LineNumberTable
--keepattributes *Annotation*
--keepclasseswithmembernames class * { native <methods>; }
--keep class co.realtime.** { *; }
--keep interface co.realtime.** { *; }
--keepnames class co.realtime.** { *; }
--keepnames interface co.realtime.** { *; }
--keep class ibt.ortc.** { *; }
--keep interface ibt.ortc.** { *; }
