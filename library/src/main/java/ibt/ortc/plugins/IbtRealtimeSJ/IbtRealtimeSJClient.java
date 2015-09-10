@@ -1,19 +1,6 @@
 package ibt.ortc.plugins.IbtRealtimeSJ;
 
-import android.app.Activity;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
-
-import ibt.ortc.api.Ortc;
-import ibt.ortc.api.Strings;
-import ibt.ortc.extensibility.EventEnum;
-import ibt.ortc.extensibility.OrtcClient;
-import ibt.ortc.extensibility.exception.OrtcNotConnectedException;
-import ibt.ortc.plugins.IbtRealtimeSJ.OrtcServerErrorException.OrtcServerErrorOperation;
-import ibt.ortc.plugins.websocket.WebSocket;
-import ibt.ortc.plugins.websocket.WebSocketEventHandler;
-import ibt.ortc.plugins.websocket.WebSocketException;
-import ibt.ortc.plugins.websocket.WebSocketMessage;
+import org.json.simple.JSONValue;
 
 import java.io.IOException;
 import java.net.URI;
@@ -23,7 +10,15 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import org.json.simple.JSONValue;
+import ibt.ortc.api.Strings;
+import ibt.ortc.extensibility.EventEnum;
+import ibt.ortc.extensibility.OrtcClient;
+import ibt.ortc.extensibility.exception.OrtcNotConnectedException;
+import ibt.ortc.plugins.IbtRealtimeSJ.OrtcServerErrorException.OrtcServerErrorOperation;
+import ibt.ortc.plugins.websocket.WebSocket;
+import ibt.ortc.plugins.websocket.WebSocketEventHandler;
+import ibt.ortc.plugins.websocket.WebSocketException;
+import ibt.ortc.plugins.websocket.WebSocketMessage;
 
 public final class IbtRealtimeSJClient extends OrtcClient {
   private static final Integer HEARTBEAT_TIMEOUT = 30;
