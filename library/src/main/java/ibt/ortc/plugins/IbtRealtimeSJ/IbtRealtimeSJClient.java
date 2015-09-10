@@ -30,7 +30,7 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 	private String sessionId = "";
 	private long sessionIdTimesamp = 0;
 	private final int SESSION_TIME = 30;
-	private final int SESSION_ID_SIZE = 10;
+	private final int SESSION_ID_SIZE = 16;
 
 
 	@Override
