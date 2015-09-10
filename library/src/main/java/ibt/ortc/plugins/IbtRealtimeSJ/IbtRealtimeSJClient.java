@@ -1,5 +1,15 @@
 package ibt.ortc.plugins.IbtRealtimeSJ;
 
+import org.json.simple.JSONValue;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Date;
+import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
 import ibt.ortc.api.Strings;
 import ibt.ortc.extensibility.EventEnum;
 import ibt.ortc.extensibility.OrtcClient;
@@ -10,14 +20,6 @@ import ibt.ortc.plugins.websocket.WebSocketEventHandler;
 import ibt.ortc.plugins.websocket.WebSocketException;
 import ibt.ortc.plugins.websocket.WebSocketMessage;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Date;
-import java.util.Random;
-
-import org.json.simple.JSONValue;
-
 public final class IbtRealtimeSJClient extends OrtcClient {
   private static final Integer HEARTBEAT_TIMEOUT = 30;
   
@@ -25,6 +27,11 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 	
 	private Thread heartBeatThread;	
 	private Date lastHeartBeat;
+	private String sessionId = "";
+	private long sessionIdTimesamp = 0;
+	private final int SESSION_TIME = 30;
+	private final int SESSION_ID_SIZE = 16;
+
 
 	@Override
 	protected void connect() {
@@ -105,38 +112,39 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 					//message = message.replace("\\\"", "\"");
 					lastHeartBeat = new Date();
 					if ("h".equals(message)) {
-					  //lastHeartBeat = new Date();
-					} else	{ 
-					  if ("o".equals(message)) {
+						//lastHeartBeat = new Date();
+					} else {
+						if ("o".equals(message)) {
 							performValidate();
 						} else {
-							
+
 							OrtcMessage ortcMessage = OrtcMessage
 									.parseMessage(message);
 							OrtcOperation operation = ortcMessage
 									.getOperation();
 
 							switch (operation) {
-							case Validated:
-								onValidated(ortcMessage);
-								break;
-							case Subscribed:
-								onSubscribed(ortcMessage);
-								break;
-							case Unsubscribed:
-								onUnsubscribed(ortcMessage);
-								break;
-							case Received:								
-								onReceived(ortcMessage);
-								break;
-							case Error:
-								onError(ortcMessage);
-								break;
-                            case Close:
-                                 try {
-                                   socket.close(true);
-                                 } catch (WebSocketException e) {}
-                                 break;
+								case Validated:
+									onValidated(ortcMessage);
+									break;
+								case Subscribed:
+									onSubscribed(ortcMessage);
+									break;
+								case Unsubscribed:
+									onUnsubscribed(ortcMessage);
+									break;
+								case Received:
+									onReceived(ortcMessage);
+									break;
+								case Error:
+									onError(ortcMessage);
+									break;
+								case Close:
+									try {
+										socket.close(true);
+									} catch (WebSocketException e) {
+									}
+									break;
 							}
 						}
 					}
@@ -147,35 +155,35 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 
 			@Override
 			public void onClose() {
-				if(heartBeatThread != null)
+				if (heartBeatThread != null)
 					heartBeatThread.interrupt();
 				isReconnecting = false;
 				raiseOrtcEvent(EventEnum.OnDisconnected, sender);
 			}
-			
+
 			@Override
 			public void onForcedClose() {
-				if(heartBeatThread != null)
+				if (heartBeatThread != null)
 					heartBeatThread.interrupt();
-				if(!isReconnecting){
+				if (!isReconnecting) {
 					isReconnecting = true;
 					raiseOrtcEvent(EventEnum.OnDisconnected, sender);
 				}
 			}
 
-            @Override
-            public void onPing() {
+			@Override
+			public void onPing() {
 
-            }
+			}
 
-            @Override
-            public void onPong() {
+			@Override
+			public void onPong() {
 
-            }
+			}
 
-            @Override
+			@Override
 			public void onException(Exception error) {
-				raiseOrtcEvent(EventEnum.OnException, sender,error);
+				raiseOrtcEvent(EventEnum.OnException, sender, error);
 			}
 		});
 	}
@@ -184,7 +192,7 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 		String lAnnouncementSubChannel = Strings
 				.isNullOrEmpty(this.announcementSubChannel) ? ""
 				: this.announcementSubChannel;
-		String lSessionId = "";
+		String lSessionId = this.getSessionId();
 		String heartbeatDetails = heartbeatActive ? ";" + heartbeatTime + ";" + heartbeatFails + ";" : "";
 		String validateMessage = String.format("validate;%s;%s;%s;%s;%s%s",
 				this.applicationKey, this.authenticationToken,
@@ -193,6 +201,29 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 
 		sendMessage(validateMessage);
 	}
+
+	private static String random(final int MAX_LENGTH) {
+		String session = UUID.randomUUID().toString();
+		session = session.replace("-","");
+		return session.substring(0, MAX_LENGTH);
+	}
+
+	private String generateSessionId(){
+		this.sessionIdTimesamp = System.currentTimeMillis();
+		this.sessionId = IbtRealtimeSJClient.random(SESSION_ID_SIZE);
+		return this.sessionId;
+	}
+
+	private String getSessionId(){
+		long now = System.currentTimeMillis();
+
+		long minutes = TimeUnit.MILLISECONDS.toMinutes(now - this.sessionIdTimesamp);
+		if (this.sessionId.equals("") || minutes >= SESSION_TIME)
+			return this.generateSessionId();
+
+		return this.sessionId;
+	}
+
 
 	private void onValidated(OrtcMessage message) {
 
