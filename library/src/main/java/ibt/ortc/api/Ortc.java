@@ -151,103 +151,53 @@ import java.util.Set;
  * 	System.out.println(&quot;ORTC ERROR: &quot; + e.toString());
  * }
  * </pre>
- * 
- * <br>
- * <b>How to use in java:<b>
- * 
- * <pre>
- * try {
- * 	boolean isBalancer = true;
- * 
- * 	Ortc api = new Ortc();
- * 
- * 	OrtcFactory factory = api.loadOrtcFactory(&quot;IbtRealtimeSJ&quot;);
- * 
- * 	final OrtcClient client = factory.createClient();
- * 
- * 	if (isBalancer) {
- * 		client.setClusterUrl(serverUrl);
- * 	} else {
- * 		client.setUrl(serverUrl);
- * 	}
- * 
- * 	System.out.println(String.format(&quot;Connecting to server %s&quot;, serverUrl));
- * 
- * 	client.OnConnected = new OnConnected() {
- * 		&#064;Override
- * 		public void run(OrtcClient sender) {
- * 			System.out
- * 					.println(String.format(&quot;Connected to %s&quot;, client.getUrl()));
- * 			System.out.println(String.format(&quot;Session ID: %s\n&quot;,
- * 					((OrtcClient) sender).getSessionId()));
- * 
- * 			client.subscribe(&quot;channel1&quot;, true, new OnMessage() {
- * 				&#064;Override
- * 				public void run(Object sender, String channel, String message) {
- * 					System.out.println(String.format(
- * 							&quot;Message received on channel %s: '%s'&quot;, channel,
- * 							message));
- * 
- * 					((OrtcClient) sender).send(channel, &quot;Echo &quot; + message);
- * 				}
- * 			});
- * 		}
- * 	};
- * 
- * 	client.OnException = new OnException() {
- * 		&#064;Override
- * 		public void run(OrtcClient send, Exception ex) {
- * 			System.out.println(String.format(&quot;Error: '%s'&quot;, ex.toString()));
- * 		}
- * 	};
- * 
- * 	client.OnDisconnected = new OnDisconnected() {
- * 		&#064;Override
- * 		public void run(OrtcClient sender) {
- * 			System.out.println(&quot;Disconnected&quot;);
- * 		}
- * 	};
- * 
- * 	client.OnReconnected = new OnReconnected() {
- * 		&#064;Override
- * 		public void run(OrtcClient sender) {
- * 			System.out.println(String.format(&quot;Reconnected to %s&quot;,
- * 					client.getUrl()));
- * 		}
- * 	};
- * 
- * 	client.OnReconnecting = new OnReconnecting() {
- * 		&#064;Override
- * 		public void run(OrtcClient sender) {
- * 			System.out.println(String.format(&quot;Reconnecting to %s&quot;,
- * 					client.getUrl()));
- * 		}
- * 	};
- * 
- * 	client.OnSubscribed = new OnSubscribed() {
- * 		&#064;Override
- * 		public void run(OrtcClient sender, String channel) {
- * 			System.out.println(String.format(&quot;Subscribed to channel %s&quot;,
- * 					channel));
- * 		}
- * 	};
- * 
- * 	client.OnUnsubscribed = new OnUnsubscribed() {
- * 		&#064;Override
- * 		public void run(OrtcClient sender, String channel) {
- * 			System.out.println(String.format(&quot;Unsubscribed from channel %s&quot;,
- * 					channel));
- * 		}
- * 	};
- * 
- * 	System.out.println(&quot;Connecting...&quot;);
- * 	client.connect(&quot;APPLICATION_KEY&quot;, &quot;AUTHENTICATION_TOKEN&quot;);
- * 
- * } catch (Exception e) {
- * 	System.out.println(&quot;ORTC ERROR: &quot; + e.toString());
- * }
- * </pre>
- * 
+ *<br>
+ *
+ *  <b>How to use ORTC with GCM (Google Cloud Messaging)</b>
+ *  <br/><br/>
+ *  In order to use GCM you have to fulfilled the following steps:<br/>
+ *
+ *  1. Create a reference to Google Play Services library. See <a href="http://developer.android.com/google/play-services/setup.html">http://developer.android.com/google/play-services/setup.html</a> for more informations.<br/>
+ *  2. Add following tags to your application's manifest file:<br/>
+ *  <pre>
+ *  &lt;uses-permission android:name="android.permission.GET_ACCOUNTS" /&gt;
+ *  &lt;uses-permission android:name="android.permission.WAKE_LOCK" /&gt;
+ *  &lt;permission android:name="YOUR_PACKAGE_NAME.permission.C2D_MESSAGE" android:protectionLevel="signature" /&gt;
+ *  &lt;uses-permission android:name="YOUR_PACKAGE_NAME.permission.C2D_MESSAGE" /&gt;
+ *  &lt;uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" /&gt;
+ *  </pre>
+ *  Remember to change YOUR_PACKAGE_NAME for the package name of your application (ex: com.example.your.application).<br/>
+ *  <br/>
+ *  3. Add following tags to your application's manifest file, as a child of the &lt;application&gt; element:<br/>
+ *  <pre>
+ *  &lt;meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" /&gt;
+ *  &lt;receiver
+ *  android:name="ibt.ortc.extensibility.GcmOrtcBroadcastReceiver"
+ *  android:permission="com.google.android.c2dm.permission.SEND" &gt;
+ *  &lt;intent-filter&gt;
+ *  &lt;action android:name="com.google.android.c2dm.intent.RECEIVE" /&gt;
+ *  &lt;category android:name="YOUR_PACKAGE_NAME" /&gt;
+ *  &lt;/intent-filter&gt;
+ *  &lt;/receiver&gt;
+ *  &lt;service android:name="ibt.ortc.extensibility.GcmOrtcIntentService" /&gt;
+ *  </pre>
+ *  Remember to change YOUR_PACKAGE_NAME for the package name of your application (ex: com.example.your.application).<br/>
+ *  <br/>
+ *  4. Before perform the method 'connect' on the OrtcClient instance, you have to provide the application context (with method 'setApplicationContext') and Google project Id (with method 'setGoogleProjectId'). See the code snippet below:<br/>
+ *  <pre>
+ * OrtcClient client = (new Ortc()).loadOrtcFactory("IbtRealtimeSJ").createClient();
+ *  client.setApplicationContext(getApplicationContext());
+ *  client.setGoogleProjectId("0123456789");
+ *  client.setClusterUrl("http://ortc-developers.realtime.co/server/2.1/");
+ *  client.connect("your_application_key", "your_authentication_token");
+ *  </pre>
+ *  If you do not provide the application context or Google project Id, the ORTC API will not register the device during connect process and will not use Google Cloud Messaging.<br/>
+ *  <br/><br/>
+ *
+ *  <b><i>Disclaimer:</i></b><br/>
+ *  1. GCM require the Google Play Services to be installed and enabled at client device.<br/>
+ *  2. When you perform for the very first time the method 'connect', ORTC API will try to register your application with GCM service to obtain the registration id. It is an asynchronous process and it can take a while. So when you perform the method 'subscribeWithNotifications' right after the method 'connect', you may get an ORTC exception "The application is not registered with GCM yet!". After the registration, the id is stored in the application's shared preferences, so it will be available immediately.<br/></div>
+ *
  * @version 2.1.0 27 Mar 2013
  * @author IBT
  * 
