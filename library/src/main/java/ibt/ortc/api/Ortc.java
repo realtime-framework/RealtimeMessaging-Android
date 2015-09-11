@@ -247,6 +247,43 @@ import java.util.Set;
  * 	System.out.println(&quot;ORTC ERROR: &quot; + e.toString());
  * }
  * </pre>
+ * How to use ORTC with GCM (Google Cloud Messaging)
+
+ * In order to use GCM you have to fulfilled the following steps:
+ * 1. Create a reference to Google Play Services library. See http://developer.android.com/google/play-services/setup.html for more informations.
+ *  2. Add following tags to your application's manifest file:
+ *  <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+ *  <uses-permission android:name="android.permission.WAKE_LOCK" />
+ *  <permission android:name="YOUR_PACKAGE_NAME.permission.C2D_MESSAGE" android:protectionLevel="signature" />
+ *  <uses-permission android:name="YOUR_PACKAGE_NAME.permission.C2D_MESSAGE" />
+ *  <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+ *  Remember to change YOUR_PACKAGE_NAME for the package name of your application (ex: com.example.your.application).
+ *
+ *  3. Add following tags to your application's manifest file, as a child of the <application> element:
+ *  <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
+ *  <receiver
+ *  android:name="ibt.ortc.extensibility.GcmOrtcBroadcastReceiver"
+ *  android:permission="com.google.android.c2dm.permission.SEND" >
+ *  <intent-filter>
+ *  <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+ *  <category android:name="YOUR_PACKAGE_NAME" />
+ *  </intent-filter>
+ *  </receiver>
+ *  <service android:name="ibt.ortc.extensibility.GcmOrtcIntentService" />
+ *  Remember to change YOUR_PACKAGE_NAME for the package name of your application (ex: com.example.your.application).
+ *
+ *  4. Before perform the method 'connect' on the OrtcClient instance, you have to provide the application context (with method 'setApplicationContext') and Google project Id (with method 'setGoogleProjectId'). See the code snippet below:
+ *  OrtcClient client = (new Ortc()).loadOrtcFactory("IbtRealtimeSJ").createClient();
+ *  client.setApplicationContext(getApplicationContext());
+ *  client.setGoogleProjectId("0123456789");
+ *  client.setClusterUrl("http://ortc-developers.realtime.co/server/2.1/");
+ *  client.connect("your_application_key", "your_authentication_token");
+ *  If you do not provide the application context or Google project Id, the ORTC API will not register the device during connect process and will not use Google Cloud Messaging.
+ *
+ *
+ *  Disclaimer:
+ *  1. GCM require the Google Play Services to be installed and enabled at client device.
+ *  2. When you perform for the very first time the method 'connect', ORTC API will try to register your application with GCM service to obtain the registration id. It is an asynchronous process and it can take a while. So when you perform the method 'subscribeWithNotifications' right after the method 'connect', you may get an ORTC exception "The application is not registered with GCM yet!". After the registration, the id is stored in the application's shared preferences, so it will be available immediately.
  * 
  * @version 2.1.0 27 Mar 2013
  * @author IBT
