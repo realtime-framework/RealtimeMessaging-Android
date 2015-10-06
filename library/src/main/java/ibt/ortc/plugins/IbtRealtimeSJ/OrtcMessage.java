@@ -133,6 +133,27 @@ public class OrtcMessage {
         return new OrtcMessage(operation, parsedMessage, messageChannel, messageId, messagePart, messageTotalParts);
     }
 
+    public static String parseOrtcMultipartMessage(String ortcMessage){
+        Matcher parsedMessageMatcher = multipartMessagePattern.matcher(ortcMessage);
+        String parsedMessage = "";
+
+        try{
+            if (parsedMessageMatcher.matches()) {
+                parsedMessage = parsedMessageMatcher.group(4);
+            }
+        } catch (Exception parseException){
+            // probably a custom push message, use the received string with no parsing
+            parsedMessage = ortcMessage;
+        }
+
+        if(parsedMessage == "") {
+            // there's something wrong with the message format. Use the unparsed format.
+            parsedMessage = ortcMessage;
+        }
+
+        return parsedMessage;
+    }
+
     private static Matcher parseMultiPartMessage(String message) {
         Matcher result = multipartMessagePattern.matcher(message);
 
