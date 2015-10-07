@@ -88,7 +88,6 @@ public class Balancer{
 	 *            The Ortc Balancer url
 	 * @return An Ortc Server url
 	 * @throws java.io.IOException
-	 * @throws UnknownHostException 
 	 * @throws InvalidBalancerServerException
 	 */
     public static String getServerFromBalancer(String balancerUrl,String applicationKey) throws IOException, InvalidBalancerServerException {
@@ -119,9 +118,6 @@ public class Balancer{
 	 * @param balancerUrl
 	 *            The Ortc Balancer url
      * @throws java.net.MalformedURLException
-	 * @throws java.io.IOException
-	 * @throws UnknownHostException 
-	 * @throws InvalidBalancerServerException
 	 */
     public static void getServerFromBalancerAsync(String balancerUrl,String applicationKey, final OnRestWebserviceResponse onCompleted) throws MalformedURLException {
 		Matcher protocolMatcher = urlProtocolPattern.matcher(balancerUrl);

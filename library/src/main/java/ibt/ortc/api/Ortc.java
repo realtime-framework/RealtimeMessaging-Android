@@ -18,7 +18,7 @@ import java.util.Set;
 /**
  * Class containing the methods to create Ortc Client factories and use the Ortc
  * Rest services <br>
- * <b>How to use in android:<b>
+ * &lt;b&gt;How to use in android:&lt;b&gt;
  * 
  * <pre>
  * try {
@@ -154,11 +154,11 @@ import java.util.Set;
  *<br>
  *
  *  <b>How to use ORTC with GCM (Google Cloud Messaging)</b>
- *  <br/><br/>
- *  In order to use GCM you have to fulfilled the following steps:<br/>
+ *  &lt;br/&gt;&lt;br/&gt;
+ *  In order to use GCM you have to fulfilled the following steps:&lt;br/&gt;
  *
- *  1. Create a reference to Google Play Services library. See <a href="http://developer.android.com/google/play-services/setup.html">http://developer.android.com/google/play-services/setup.html</a> for more informations.<br/>
- *  2. Add following tags to your application's manifest file:<br/>
+ *  1. Create a reference to Google Play Services library. See <a href="http://developer.android.com/google/play-services/setup.html">http://developer.android.com/google/play-services/setup.html</a> for more informations.&lt;br/&gt;
+ *  2. Add following tags to your application's manifest file:&lt;br/&gt;
  *  <pre>
  *  &lt;uses-permission android:name="android.permission.GET_ACCOUNTS" /&gt;
  *  &lt;uses-permission android:name="android.permission.WAKE_LOCK" /&gt;
@@ -166,9 +166,9 @@ import java.util.Set;
  *  &lt;uses-permission android:name="YOUR_PACKAGE_NAME.permission.C2D_MESSAGE" /&gt;
  *  &lt;uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" /&gt;
  *  </pre>
- *  Remember to change YOUR_PACKAGE_NAME for the package name of your application (ex: com.example.your.application).<br/>
- *  <br/>
- *  3. Add following tags to your application's manifest file, as a child of the &lt;application&gt; element:<br/>
+ *  Remember to change YOUR_PACKAGE_NAME for the package name of your application (ex: com.example.your.application).&lt;br/&gt;
+ *  &lt;br/&gt;
+ *  3. Add following tags to your application's manifest file, as a child of the &lt;application&gt; element:&lt;br/&gt;
  *  <pre>
  *  &lt;meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" /&gt;
  *  &lt;receiver
@@ -181,9 +181,9 @@ import java.util.Set;
  *  &lt;/receiver&gt;
  *  &lt;service android:name="ibt.ortc.extensibility.GcmOrtcIntentService" /&gt;
  *  </pre>
- *  Remember to change YOUR_PACKAGE_NAME for the package name of your application (ex: com.example.your.application).<br/>
- *  <br/>
- *  4. Before perform the method 'connect' on the OrtcClient instance, you have to provide the application context (with method 'setApplicationContext') and Google project Id (with method 'setGoogleProjectId'). See the code snippet below:<br/>
+ *  Remember to change YOUR_PACKAGE_NAME for the package name of your application (ex: com.example.your.application).&lt;br/&gt;
+ *  &lt;br/&gt;
+ *  4. Before perform the method 'connect' on the OrtcClient instance, you have to provide the application context (with method 'setApplicationContext') and Google project Id (with method 'setGoogleProjectId'). See the code snippet below:&lt;br/&gt;
  *  <pre>
  * OrtcClient client = (new Ortc()).loadOrtcFactory("IbtRealtimeSJ").createClient();
  *  client.setApplicationContext(getApplicationContext());
@@ -191,12 +191,12 @@ import java.util.Set;
  *  client.setClusterUrl("http://ortc-developers.realtime.co/server/2.1/");
  *  client.connect("your_application_key", "your_authentication_token");
  *  </pre>
- *  If you do not provide the application context or Google project Id, the ORTC API will not register the device during connect process and will not use Google Cloud Messaging.<br/>
- *  <br/><br/>
+ *  If you do not provide the application context or Google project Id, the ORTC API will not register the device during connect process and will not use Google Cloud Messaging.&lt;br/&gt;
+ *  &lt;br/&gt;&lt;br/&gt;
  *
- *  <b><i>Disclaimer:</i></b><br/>
- *  1. GCM require the Google Play Services to be installed and enabled at client device.<br/>
- *  2. When you perform for the very first time the method 'connect', ORTC API will try to register your application with GCM service to obtain the registration id. It is an asynchronous process and it can take a while. So when you perform the method 'subscribeWithNotifications' right after the method 'connect', you may get an ORTC exception "The application is not registered with GCM yet!". After the registration, the id is stored in the application's shared preferences, so it will be available immediately.<br/></div>
+ *  <b><i>Disclaimer:</i></b>&lt;br/&gt;
+ *  1. GCM require the Google Play Services to be installed and enabled at client device.&lt;br/&gt;
+ *  2. When you perform for the very first time the method 'connect', ORTC API will try to register your application with GCM service to obtain the registration id. It is an asynchronous process and it can take a while. So when you perform the method 'subscribeWithNotifications' right after the method 'connect', you may get an ORTC exception "The application is not registered with GCM yet!". After the registration, the id is stored in the application's shared preferences, so it will be available immediately.&lt;br/&gt;
  *
  * @version 2.1.0 27 Mar 2013
  * @author IBT
@@ -354,8 +354,8 @@ public class Ortc {
 	 *            The private key provided to you together with the ORTC service
 	 *            purchasing.
 	 * @param permissions
-	 *            HashMap&lt;String,LinkedList&lt;String,ChannelPermissions&gt;&
-	 *            gt; permissions& The channels and their permissions (w:
+	 *            HashMap&lt;String,LinkedList&lt;String,ChannelPermissions&gt;
+	 *            &gt; permissions The channels and their permissions (w:
 	 *            write/read or r: read or p: presence, case sensitive).
 	 * @return True if the authentication was successful or false if it was not.
 	 * @throws ibt.ortc.api.OrtcAuthenticationNotAuthorizedException
@@ -486,12 +486,13 @@ public class Ortc {
 	 *            The private key provided to you together with the ORTC service
 	 *            purchasing.
 	 * @param permissions
-	 *            HashMap&lt;String,LinkedList&lt;String,ChannelPermissions&gt;&
-	 *            gt; permissions& The channels and their permissions (w:
+	 *            HashMap&lt;String,LinkedList&lt;String,ChannelPermissions&gt;
+	 *            &gt; permissions The channels and their permissions (w:
 	 *            write/read or r: read or p: presence, case sensitive).
 	 * @param onCompleted
 	 *            The callback that is executed after the save authentication is completed
 	 * @throws ibt.ortc.api.OrtcAuthenticationNotAuthorizedException
+	 * @throws InvalidBalancerServerException
 	 */
 	public static void saveAuthentication(String url, boolean isCluster,
 			final String authenticationToken, final boolean authenticationTokenIsPrivate,

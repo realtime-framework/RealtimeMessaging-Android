@@ -49,6 +49,7 @@ public class Pair<A, B> {
 
 	/**
 	 * Sets the key element
+	 * @param v
 	 */
 	public void setFirst(A v) {
 		first = v;
@@ -56,6 +57,7 @@ public class Pair<A, B> {
 
 	/**
 	 * Sets the value element
+	 * @param v
 	 */
 	public void setSecond(B v) {
 		second = v;
