@@ -153,7 +153,7 @@ public class Authentication {
 
 		SSLSocket sslsocket = (SSLSocket) sslsocketfactory.createSocket(
 				url.getHost(), port);
-		String[] protocols = { "SSLv3" };
+		String[] protocols = { "TLSv1" };
 		sslsocket.setEnabledProtocols(protocols);
 
 		OutputStream outputstream = sslsocket.getOutputStream();
