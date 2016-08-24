@@ -3,25 +3,25 @@
  */
 package ibt.ortc.plugins.IbtRealtimeSJ;
 
-import ibt.ortc.api.Strings;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 
-
-//import ibt.ortc.extensibility.CharEscaper;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
+import ibt.ortc.api.Strings;
+
+//import ibt.ortc.extensibility.CharEscaper;
 
 public class OrtcMessage {
     private static final String OPERATION_PATTERN = "^a\\[\"\\{\\\\\"op\\\\\":\\\\\"([^\"]+)\\\\\",(.*)\\}\"\\]$";
     private static final String CHANNEL_PATTERN = "^\\\\\"ch\\\\\":\\\\\"(.*)\\\\\"$";
     private static final String RECEIVED_PATTERN = "^a?\\[\"\\{\\\\\"ch\\\\\":\\\\\"(.*)\\\\\",\\\\\"m\\\\\":\\\\\"([\\s\\S]*?)\\\\\"\\}\"\\]$";
+    private static final String RECEIVED_PATTERN_FILTERED = "^a?\\[\"\\{\\\\\"ch\\\\\":\\\\\"(.*)\\\\\",\\\\\"f\\\\\":(.*),\\\\\"m\\\\\":\\\\\"([\\s\\S]*?)\\\\\"\\}\"\\]$";
     private static final String MULTI_PART_MESSAGE_PATTERN = "^(.[^_]*)_(.[^-]*)-(.[^_]*)_([\\s\\S]*?)$";
     private static final String EXCEPTION_PATTERN = "^\\\\\"ex\\\\\":(\\{.*\\})$";
     private static final String PERMISSIONS_PATTERN = "^\\\\\"up\\\\\":{1}(.*),\\\\\"set\\\\\":(.*)$";
@@ -30,6 +30,7 @@ public class OrtcMessage {
     private static Pattern operationPattern;
     private static Pattern subscribedPattern;
     private static Pattern receivedPattern;
+    private static Pattern receivedPatternFiltred;
     private static Pattern multipartMessagePattern;
     private static Pattern unsubscribedPattern;
     private static Pattern exceptionPattern;
@@ -49,6 +50,7 @@ public class OrtcMessage {
             operationPattern = Pattern.compile(OPERATION_PATTERN);
             subscribedPattern = Pattern.compile(CHANNEL_PATTERN);
             receivedPattern = Pattern.compile(RECEIVED_PATTERN);
+            receivedPatternFiltred = Pattern.compile(RECEIVED_PATTERN_FILTERED);
             multipartMessagePattern = Pattern.compile(MULTI_PART_MESSAGE_PATTERN);
             unsubscribedPattern = Pattern.compile(CHANNEL_PATTERN);
             exceptionPattern = Pattern.compile(EXCEPTION_PATTERN);
@@ -81,6 +83,7 @@ public class OrtcMessage {
     public static OrtcMessage parseMessage(String message) throws IOException {
         OrtcOperation operation = null;
         String parsedMessage = null;
+        String filtredByServer = null;
         String messageChannel = null;
         String messageId = null;
         int messagePart = -1;
@@ -91,8 +94,10 @@ public class OrtcMessage {
         if (matcher != null && !matcher.matches()) {
             //matcher = receivedPattern.matcher(message.replace("\\\"", "\""));
 			matcher = receivedPattern.matcher(message);
-			
-            if (matcher != null && matcher.matches()) {
+            Matcher matcherFiltred = receivedPatternFiltred.matcher(message);
+
+
+            if ((matcher != null && matcher.matches())) {
                 operation = OrtcOperation.Received;
                 parsedMessage = matcher.group(2);
                 messageChannel = matcher.group(1);
@@ -111,6 +116,30 @@ public class OrtcMessage {
                 }catch(NumberFormatException parseException){
                     //throw new NumberFormatException("Invalid message format: " + message + " - Error " + parseException.toString());
                     parsedMessage = matcher.group(2);
+                    messageId = null;
+                    messagePart = -1;
+                    messageTotalParts = -1;
+                }
+            } else if((matcherFiltred != null && matcherFiltred.matches())){
+                operation = OrtcOperation.Received;
+                parsedMessage = matcherFiltred.group(3);
+                filtredByServer = matcherFiltred.group(2);
+                messageChannel = matcherFiltred.group(1);
+
+                //parsedMessage = parsedMessage.replace("\\\\n", "\n").replace("\\\"", "\"").replace("\\\\\\\\", "\\");
+
+                Matcher multiPartMatcher = parseMultiPartMessage(parsedMessage);
+
+                try{
+                    if (multiPartMatcher.matches()) {
+                        parsedMessage = multiPartMatcher.group(4);
+                        messageId = multiPartMatcher.group(1);
+                        messagePart = Strings.isNullOrEmpty(multiPartMatcher.group(2)) ? -1 : Integer.parseInt(multiPartMatcher.group(2));
+                        messageTotalParts = Strings.isNullOrEmpty(multiPartMatcher.group(3)) ? -1 : Integer.parseInt(multiPartMatcher.group(3));
+                    }
+                }catch(NumberFormatException parseException){
+                    //throw new NumberFormatException("Invalid message format: " + message + " - Error " + parseException.toString());
+                    parsedMessage = matcherFiltred.group(2);
                     messageId = null;
                     messagePart = -1;
                     messageTotalParts = -1;

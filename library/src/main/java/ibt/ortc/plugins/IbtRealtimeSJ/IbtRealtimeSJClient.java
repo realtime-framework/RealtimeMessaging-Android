@@ -352,11 +352,13 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 	}
 
 	@Override
-	protected void subscribe(String channel, String permission, boolean withNotification) {
-		String subscribeMessage = String.format("subscribe;%s;%s;%s;%s%s",
-				this.applicationKey, this.authenticationToken, channel,
+	protected void subscribe(String channel, String permission, boolean withNotification, boolean withFilter, String filter) {
+		String subscribe = ((withFilter == true)? "subscribefilter" : "subscribe");
+		String subscribeMessage = String.format("%s;%s;%s;%s;%s%s%s",
+                subscribe, this.applicationKey, this.authenticationToken, channel,
 				permission == null ? null : permission,
-				(withNotification?String.format(";%s;GCM", this.registrationId):""));				
+				(withNotification?String.format(";%s;GCM", this.registrationId):""),
+                (withFilter?String.format(";%s", filter):""));
 		sendMessage(subscribeMessage);
 	}
 

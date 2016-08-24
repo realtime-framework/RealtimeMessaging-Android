@@ -4,6 +4,23 @@
  */
 package ibt.ortc.extensibility;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.IBinder;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Hashtable;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
+
 import ibt.ortc.api.Balancer;
 import ibt.ortc.api.InvalidBalancerServerException;
 import ibt.ortc.api.OnDisablePresence;
@@ -21,24 +38,6 @@ import ibt.ortc.extensibility.exception.OrtcMaxLengthException;
 import ibt.ortc.extensibility.exception.OrtcNotConnectedException;
 import ibt.ortc.extensibility.exception.OrtcNotSubscribedException;
 import ibt.ortc.extensibility.exception.OrtcSubscribedException;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
-
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
-import android.os.IBinder;
 
 /**
  * Abstract class representing an Ortc Client
@@ -599,6 +598,28 @@ public abstract class OrtcClient {
 		return result;
 	}
 
+
+	/**
+	 * Subscribe the specified channel in order to receive messages in that
+	 * channel
+	 *
+	 * @param channel
+	 *            Channel to be subscribed
+	 * @param subscribeOnReconnect
+	 *            Indicates if the channel should be subscribe if the event on
+	 *            reconnected is fired
+	 * @param filter
+	 * 			  Indicates the filter for this channel
+	 * @param onMessage
+	 *            Event handler that will be called when a message will be
+	 *            received on the subscribed channel
+	 */
+	public void subscribeWithFilter(String channel, boolean subscribeOnReconnect,
+						  String filter, OnMessageWithFilter onMessage) {
+		resolveSubscriptionChannels(channel, subscribeOnReconnect, onMessage,
+				false, true, filter);
+	}
+
 	/**
 	 * Subscribe the specified channel in order to receive messages in that
 	 * channel
@@ -615,12 +636,12 @@ public abstract class OrtcClient {
 	public void subscribe(String channel, boolean subscribeOnReconnect,
 			OnMessage onMessage) {
 		resolveSubscriptionChannels(channel, subscribeOnReconnect, onMessage,
-				false);
+				false, false, "");
 	}
 
 	private <T> void resolveSubscriptionChannels(String channel,
 			boolean subscribeOnReconnect, T onMessage,
-			boolean withNotification) {
+			boolean withNotification, boolean withFilter, String filter) {
 		ChannelSubscription subscribedChannel = subscribedChannels.get(channel);
 		Pair<Boolean, String> subscribeValidation = isSubscribeValid(channel,
 				subscribedChannel, withNotification);
@@ -637,16 +658,16 @@ public abstract class OrtcClient {
 				}
 			}
 			subscribedChannel = new ChannelSubscription(subscribeOnReconnect,
-					onMessage, withNotification);
+					onMessage, withNotification, withFilter, filter);
 			subscribedChannel.setSubscribing(true);
 			subscribedChannels.put(channel, subscribedChannel);
 
-			subscribe(channel, subscribeValidation.second, withNotification);
+			subscribe(channel, subscribeValidation.second, withNotification, withFilter, filter);
 		}
 	}
 
 	protected abstract void subscribe(String channel, String permission,
-			boolean withNotification);
+			boolean withNotification, boolean withFilter, String filter);
 
 	/**
 	 * Subscribe the specified channel in order to receive messages in that
@@ -722,7 +743,7 @@ public abstract class OrtcClient {
 							"You have to provide a your Google Project ID to use the GCM notifications."));
 			return;
 		}
-		resolveSubscriptionChannels(channel, subscribeOnReconnect, onMessage, true);
+		resolveSubscriptionChannels(channel, subscribeOnReconnect, onMessage, true, false, "");
 	}
 
 	private boolean isUnsubscribeValid(String channelName,
@@ -1219,7 +1240,7 @@ public abstract class OrtcClient {
 
 				if (channelPermission != null && channelPermission.first) {
 					subscribe(channelName, channelPermission.second,
-							subscribedChannel.isWithNotification());
+							subscribedChannel.isWithNotification(), subscribedChannel.isWithFilter(), subscribedChannel.getFilter());
 				} else{
                     subscribedChannel.setSubscribing(false);
                 }
@@ -1313,9 +1334,12 @@ public abstract class OrtcClient {
 		Integer messageTotalParts = args != null && args.length >= 5 ? (Integer) args[4]
 				: null;
 
-		Map<String, Object> payload = args != null && args.length == 6 ? (Map<String, Object>) args[5]
+        boolean filtered = args != null && args.length == 6 ? (boolean) args[5] : false;
+
+
+		Map<String, Object> payload = args != null && args.length == 7 ? (Map<String, Object>) args[6]
 				: null;
-		
+
 		if ((messagePart != null && messagePart == -1
 				|| (messagePart != null && messageTotalParts != null)
 				&& (messagePart == 1 && messageTotalParts == 1)) || messageId == null) {
@@ -1333,7 +1357,7 @@ public abstract class OrtcClient {
 					//if (onMessageEventHandler != null) {
 						message = CharEscaper.removeEsc(message);
 						//onMessageEventHandler.run(this, channel, message);
-						subscription.runHandler(this, channel, message, payload);
+						subscription.runHandler(this, channel, message, filtered, payload);
 						try {
 							if (messageId != null
 									&& multiPartMessagesBuffer

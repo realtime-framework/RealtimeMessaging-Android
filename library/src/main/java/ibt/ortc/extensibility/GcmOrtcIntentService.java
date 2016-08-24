@@ -1,29 +1,27 @@
 package ibt.ortc.extensibility;
 
-import ibt.ortc.api.Ortc;
-import ibt.ortc.plugins.IbtRealtimeSJ.OrtcMessage;
-
-import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
-
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
-import com.google.android.gms.gcm.GoogleCloudMessaging;
-
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
+
+import com.google.android.gms.gcm.GoogleCloudMessaging;
+
+import org.json.simple.JSONValue;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import ibt.ortc.api.Ortc;
+import ibt.ortc.plugins.IbtRealtimeSJ.OrtcMessage;
 
 
 public class GcmOrtcIntentService extends Service {
@@ -102,7 +100,7 @@ public class GcmOrtcIntentService extends Service {
 												pushNotificationHandlerExecuted = true;
 												oc.raiseOrtcEvent(EventEnum.OnReceived, ortcMessage.getMessageChannel(),
 														ortcMessage.getMessage(), messId,
-														ortcMessage.getMessagePart(), ortcMessage.getMessageTotalParts(), payload);
+														ortcMessage.getMessagePart(), ortcMessage.getMessageTotalParts(), false, payload);
 
 											}
 										}
