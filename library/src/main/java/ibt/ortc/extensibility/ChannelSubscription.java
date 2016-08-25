@@ -4,7 +4,6 @@
  */
 package ibt.ortc.extensibility;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -24,16 +23,20 @@ public class ChannelSubscription {
 	private boolean subscribeOnReconnected;
 	private OnMessage onMessage;
 	private OnMessageWithPayload onMessageWithPayload;
+    private OnMessageWithFilter onMessageWithFilter;
 	private boolean isWithPayload;
 	private boolean withNotification;
-	
-	/**
+	private boolean withFilter;
+	private String filter;
+
+
+    /**
 	 * Creates an instance of a channel subscription
 	 * @param subscribeOnReconnected Indicates if the channel should be subscribe if a reconnect happens
 	 * @param onMessageT Event handler that is fired when a message is received in the channel
 	 * @param withNotification If true, GCM will be used
 	 */
-	public <T> ChannelSubscription(boolean subscribeOnReconnected,T onMessageT, boolean withNotification){
+	public <T> ChannelSubscription(boolean subscribeOnReconnected,T onMessageT, boolean withNotification, boolean withFilter, String filter){
 		this.subscribeOnReconnected = subscribeOnReconnected;
 
 		
@@ -41,13 +44,21 @@ public class ChannelSubscription {
 		if(onMessageT instanceof OnMessage){
 			this.onMessage = (OnMessage) onMessageT;
 			this.isWithPayload = false;
-		} else {
+            this.withFilter = false;
+		} else if(onMessageT instanceof OnMessageWithFilter){
+            this.onMessageWithFilter = (OnMessageWithFilter) onMessageT;
+            this.withFilter = true;
+            this.isWithPayload = false;
+        } else {
 			this.onMessageWithPayload = (OnMessageWithPayload) onMessageT;
 			this.isWithPayload = true;
+            this.withFilter = false;
 		}
 		this.isSubscribed = false;
 		this.isSubscribing = false;
 		this.withNotification = withNotification;
+		this.withFilter = withFilter;
+		this.filter = filter;
 	}
 	
 	/**
@@ -89,7 +100,7 @@ public class ChannelSubscription {
 	 * @param message 
 	 */
 	public void runHandler(OrtcClient sender, String channel, String message){
-		this.runHandler(sender, channel, message, null);
+		this.runHandler(sender, channel, message, false, null);
 	}
 	/**
 	 * Fires the event handler that is associated the subscribed channel (with payload)
@@ -98,10 +109,12 @@ public class ChannelSubscription {
 	 * @param message 
 	 * @param payload
 	 */
-	public void runHandler(OrtcClient sender, String channel, String message, Map<String, Object> payload){
+	public void runHandler(OrtcClient sender, String channel, String message, boolean filtered,  Map<String, Object> payload){
 		if(this.isWithPayload){
 			this.onMessageWithPayload.run(sender, channel, message, payload);
-		} else {
+		} else if(this.withFilter){
+            this.onMessageWithFilter.run(sender, channel, filtered, message);
+        } else {
 			this.onMessage.run(sender, channel, message);
 		}
 	}
@@ -123,5 +136,13 @@ public class ChannelSubscription {
 	
 	public boolean isWithNotification(){
 		return this.withNotification;
+	}
+
+	public boolean isWithFilter(){
+		return this.withFilter;
+	}
+
+	public String getFilter(){
+		return this.filter;
 	}
 }

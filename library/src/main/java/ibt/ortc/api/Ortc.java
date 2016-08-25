@@ -4,16 +4,15 @@
  */
 package ibt.ortc.api;
 
-import ibt.ortc.extensibility.OnMessage;
-import ibt.ortc.extensibility.OnMessageWithPayload;
-import ibt.ortc.extensibility.OrtcFactory;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+
+import ibt.ortc.extensibility.OnMessageWithPayload;
+import ibt.ortc.extensibility.OrtcFactory;
 
 /**
  * Class containing the methods to create Ortc Client factories and use the Ortc
