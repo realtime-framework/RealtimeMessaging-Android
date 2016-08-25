@@ -30,12 +30,13 @@ public class OrtcMessage {
     private static Pattern operationPattern;
     private static Pattern subscribedPattern;
     private static Pattern receivedPattern;
-    private static Pattern receivedPatternFiltred;
+    private static Pattern receivedPatternFiltered;
     private static Pattern multipartMessagePattern;
     private static Pattern unsubscribedPattern;
     private static Pattern exceptionPattern;
     private static Pattern permissionsPattern;
     private static Pattern closePattern;
+    private final boolean isFiltered;
 
     private OrtcOperation operation;
     private String message;
@@ -50,7 +51,7 @@ public class OrtcMessage {
             operationPattern = Pattern.compile(OPERATION_PATTERN);
             subscribedPattern = Pattern.compile(CHANNEL_PATTERN);
             receivedPattern = Pattern.compile(RECEIVED_PATTERN);
-            receivedPatternFiltred = Pattern.compile(RECEIVED_PATTERN_FILTERED);
+            receivedPatternFiltered = Pattern.compile(RECEIVED_PATTERN_FILTERED);
             multipartMessagePattern = Pattern.compile(MULTI_PART_MESSAGE_PATTERN);
             unsubscribedPattern = Pattern.compile(CHANNEL_PATTERN);
             exceptionPattern = Pattern.compile(EXCEPTION_PATTERN);
@@ -70,20 +71,21 @@ public class OrtcMessage {
         errorOperationIndex.put("send_maxsize", OrtcServerErrorException.OrtcServerErrorOperation.Send_MaxSize);
     }
 
-    public OrtcMessage(OrtcOperation operation, String message, String messageChannel, String messageId, int messagePart, int messageTotalParts) {
+    public OrtcMessage(OrtcOperation operation, String message, String messageChannel, String messageId, int messagePart, int messageTotalParts, boolean isfiltered) {
         this.operation = operation;
         this.message = message;
         this.messageChannel = messageChannel;
         this.messageId = messageId;
         this.messagePart = messagePart;
         this.messageTotalParts = messageTotalParts;
+        this.isFiltered = isfiltered;
     }
 
     // CAUSE: Prefer throwing/catching meaningful exceptions instead of Exception
     public static OrtcMessage parseMessage(String message) throws IOException {
         OrtcOperation operation = null;
         String parsedMessage = null;
-        String filtredByServer = null;
+        String filteredByServer = null;
         String messageChannel = null;
         String messageId = null;
         int messagePart = -1;
@@ -94,7 +96,7 @@ public class OrtcMessage {
         if (matcher != null && !matcher.matches()) {
             //matcher = receivedPattern.matcher(message.replace("\\\"", "\""));
 			matcher = receivedPattern.matcher(message);
-            Matcher matcherFiltred = receivedPatternFiltred.matcher(message);
+            Matcher matcherFiltered = receivedPatternFiltered.matcher(message);
 
 
             if ((matcher != null && matcher.matches())) {
@@ -120,11 +122,11 @@ public class OrtcMessage {
                     messagePart = -1;
                     messageTotalParts = -1;
                 }
-            } else if((matcherFiltred != null && matcherFiltred.matches())){
+            } else if((matcherFiltered != null && matcherFiltered.matches())){
                 operation = OrtcOperation.Received;
-                parsedMessage = matcherFiltred.group(3);
-                filtredByServer = matcherFiltred.group(2);
-                messageChannel = matcherFiltred.group(1);
+                parsedMessage = matcherFiltered.group(3);
+                filteredByServer = matcherFiltered.group(2);
+                messageChannel = matcherFiltered.group(1);
 
                 //parsedMessage = parsedMessage.replace("\\\\n", "\n").replace("\\\"", "\"").replace("\\\\\\\\", "\\");
 
@@ -139,7 +141,7 @@ public class OrtcMessage {
                     }
                 }catch(NumberFormatException parseException){
                     //throw new NumberFormatException("Invalid message format: " + message + " - Error " + parseException.toString());
-                    parsedMessage = matcherFiltred.group(2);
+                    parsedMessage = matcherFiltered.group(2);
                     messageId = null;
                     messagePart = -1;
                     messageTotalParts = -1;
@@ -159,7 +161,7 @@ public class OrtcMessage {
             parsedMessage = matcher.group(2);
         }
 
-        return new OrtcMessage(operation, parsedMessage, messageChannel, messageId, messagePart, messageTotalParts);
+        return new OrtcMessage(operation, parsedMessage, messageChannel, messageId, messagePart, messageTotalParts, Boolean.valueOf(filteredByServer));
     }
 
     public static String parseOrtcMultipartMessage(String ortcMessage){
@@ -303,5 +305,9 @@ public class OrtcMessage {
 
     public int getMessageTotalParts() {
         return messageTotalParts;
+    }
+
+    public boolean isFiltered() {
+        return isFiltered;
     }
 }

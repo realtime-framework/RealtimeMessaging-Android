@@ -253,7 +253,7 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 	private void onReceived(OrtcMessage message) {
 		raiseOrtcEvent(EventEnum.OnReceived, message.getMessageChannel(),
 				message.getMessage(), message.getMessageId(),
-				message.getMessagePart(), message.getMessageTotalParts());
+				message.getMessagePart(), message.getMessageTotalParts(), message.isFiltered());
 	}
 
 	@SuppressWarnings("incomplete-switch")
