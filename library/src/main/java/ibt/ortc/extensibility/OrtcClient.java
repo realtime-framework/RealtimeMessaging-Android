@@ -377,9 +377,7 @@ public abstract class OrtcClient {
 			stopHeartBeatInterval();
 			if (appContext != null && !googleProjectId.isEmpty()
 					&& !isDisconnecting) {
-				if (this.intentService != null){
-					this.intentService.removeServiceOrtcClient(this);
-				}
+				this.intentService.removeServiceOrtcClient(this);
 				//this.appContext.unbindService(this.intentServiceConnection);
 			}
 			this.disconnectIntern();
