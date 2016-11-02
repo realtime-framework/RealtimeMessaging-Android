@@ -18,7 +18,7 @@
     <string name="ButtonLabelClear">Clear Log</string>
     <string name="LogName">Log</string>
 
-    <string name="DefaultServer">http://ortc-developers.realtime.co/server/2.1/</string>
+    <string name="DefaultServer">http://192.168.1.17:8081</string><!--http://ortc-developers.realtime.co/server/2.1/</string>-->
 
     <string name="DefaultChannel">my_channel</string>
 

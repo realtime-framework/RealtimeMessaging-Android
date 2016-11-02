@@ -1,5 +1,7 @@
 package ibt.ortc.api;
 
+import org.apache.http.HttpException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,8 +9,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+
 import javax.net.ssl.HttpsURLConnection;
-import org.apache.http.HttpException;
 
 public class RestWebservice {
   

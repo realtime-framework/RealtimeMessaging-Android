@@ -2,9 +2,9 @@ package ibt.ortc.ortclib;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
-import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
@@ -26,7 +26,7 @@ import ibt.ortc.api.Presence;
 import ibt.ortc.extensibility.OnConnected;
 import ibt.ortc.extensibility.OnDisconnected;
 import ibt.ortc.extensibility.OnException;
-import ibt.ortc.extensibility.OnMessage;
+import ibt.ortc.extensibility.OnMessageWithFilter;
 import ibt.ortc.extensibility.OnMessageWithPayload;
 import ibt.ortc.extensibility.OnReconnected;
 import ibt.ortc.extensibility.OnReconnecting;
@@ -121,7 +121,7 @@ public class MainActivity extends ActionBarActivity {
                 }
             });
 
-            client.setGoogleProjectId("[enter your GCM project id]");
+            client.setGoogleProjectId("462540995476");
 
             Ortc.setOnPushNotification(new OnMessageWithPayload() {
                 @Override
@@ -151,6 +151,7 @@ public class MainActivity extends ActionBarActivity {
                 client.onConnected = new OnConnected() {
 
                     public void run(final OrtcClient sender) {
+                        sender.disconnect();
                         runOnUiThread(new Runnable() {
 
                             public void run() {
@@ -319,15 +320,14 @@ public class MainActivity extends ActionBarActivity {
     private void subscribe() {
         log("Subscribing...");
 
-        client.subscribeWithNotifications(channel, true,
-                new OnMessage() {
-                    public void run(OrtcClient sender, String channel,
-                                    String message) {
+        client.subscribeWithFilter(channel, true, "message.a = 1",
+                new OnMessageWithFilter() {
+                    public void run(OrtcClient sender, String channel, final boolean filtered, String message) {
                         final String subscribedChannel = channel;
                         final String messageReceived = message;
                         runOnUiThread(new Runnable() {
                             public void run() {
-                                log(String.format("Message on channel %s: %s", subscribedChannel, messageReceived));
+                                log(String.format("Message on channel %s: %s filter:%b", subscribedChannel, messageReceived, filtered));
                             }
                         });
                     }

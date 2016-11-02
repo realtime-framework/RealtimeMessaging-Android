@@ -1,5 +1,4 @@
 task fatJar(type: Jar) {
-    from (zipTree('libs/json_simple-1.1.jar'))
     from ('build/intermediates/classes/release/')
     into('/')
 }
