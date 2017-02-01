@@ -4,6 +4,7 @@
  */
 package ibt.ortc.extensibility;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -18,15 +19,18 @@ import java.util.Map;
  * 
  */
 public class ChannelSubscription {
-	private boolean isSubscribing;
+    private String subscriberId;
+    private boolean isSubscribing;
 	private boolean isSubscribed;
 	private boolean subscribeOnReconnected;
 	private OnMessage onMessage;
 	private OnMessageWithPayload onMessageWithPayload;
     private OnMessageWithFilter onMessageWithFilter;
+    private OnMessageWithOptions onMessageWithOptions;
 	private boolean isWithPayload;
 	private boolean withNotification;
 	private boolean withFilter;
+	private boolean withOptions;
 	private String filter;
 
 
@@ -36,7 +40,7 @@ public class ChannelSubscription {
 	 * @param onMessageT Event handler that is fired when a message is received in the channel
 	 * @param withNotification If true, GCM will be used
 	 */
-	public <T> ChannelSubscription(boolean subscribeOnReconnected,T onMessageT, boolean withNotification, boolean withFilter, String filter){
+	public <T> ChannelSubscription(boolean subscribeOnReconnected,T onMessageT, boolean withNotification, boolean withOptions, String subscriberId, boolean withFilter, String filter){
 		this.subscribeOnReconnected = subscribeOnReconnected;
 
 		
@@ -45,7 +49,12 @@ public class ChannelSubscription {
 			this.onMessage = (OnMessage) onMessageT;
 			this.isWithPayload = false;
             this.withFilter = false;
-		} else if(onMessageT instanceof OnMessageWithFilter){
+		} else if(onMessageT instanceof OnMessageWithOptions){
+            this.onMessageWithOptions = (OnMessageWithOptions) onMessageT;
+            this.withOptions = withOptions;
+            this.subscriberId = subscriberId;
+            this.isWithPayload = false;
+        } else if(onMessageT instanceof OnMessageWithFilter){
             this.onMessageWithFilter = (OnMessageWithFilter) onMessageT;
             this.withFilter = true;
             this.isWithPayload = false;
@@ -109,12 +118,25 @@ public class ChannelSubscription {
 	 * @param message 
 	 * @param payload
 	 */
-	public void runHandler(OrtcClient sender, String channel, String message, boolean filtered,  Map<String, Object> payload){
-		if(this.isWithPayload){
-			this.onMessageWithPayload.run(sender, channel, message, payload);
+	public void runHandler(OrtcClient sender, String channel, String message, Object filtered, Object payload){
+		if(this.withOptions){
+            Map msgOptions = new HashMap();
+            msgOptions.put("channel", channel);
+            msgOptions.put("message", message);
+			if (payload instanceof String){
+            	msgOptions.put("seqId", ((String) payload));
+			}else if (payload instanceof Map){
+				msgOptions.put("seqId", (String)((Map) payload).get("seqId"));
+			}
+            if (filtered != null){
+                msgOptions.put("filter", ((Boolean) filtered).booleanValue());
+            }
+            this.onMessageWithOptions.run(sender, msgOptions);
 		} else if(this.withFilter){
-            this.onMessageWithFilter.run(sender, channel, filtered, message);
-        } else {
+            this.onMessageWithFilter.run(sender, channel, (Boolean) filtered, message);
+        } else if(this.isWithPayload){
+            this.onMessageWithPayload.run(sender, channel, message, (Map)payload);
+        } else{
 			this.onMessage.run(sender, channel, message);
 		}
 	}
@@ -145,4 +167,12 @@ public class ChannelSubscription {
 	public String getFilter(){
 		return this.filter;
 	}
+
+	public boolean isWithOptions(){
+		return withOptions;
+	}
+
+    public String getSubscriberId(){
+        return subscriberId;
+    }
 }

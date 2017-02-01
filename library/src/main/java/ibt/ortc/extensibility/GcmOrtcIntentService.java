@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import ibt.ortc.api.Ortc;
 import ibt.ortc.plugins.IbtRealtimeSJ.OrtcMessage;
@@ -32,6 +34,8 @@ public class GcmOrtcIntentService extends Service {
 	private HashMap<String, String> IDS = new HashMap<String, String>();
 	private LinkedBlockingQueue<String> FIFOIDS = new LinkedBlockingQueue<String>();
 	private static final int MAX_QUEUE_IDS = 50;
+	private static final String SEQ_ID_PATTERN = "^#(.*?):";
+	private static Pattern SeqIdPattern;
 
 
 	@Override
@@ -63,7 +67,27 @@ public class GcmOrtcIntentService extends Service {
 							fstPass = fstPass.substring(1, fstPass.length()-1);
 							String sndPass = JSONValue.toJSONString(fstPass);
 							sndPass = sndPass.substring(1, sndPass.length()-1);
-							String messageForOrtc = String.format("a[\"{\\\"ch\\\":\\\"%s\\\",\\\"m\\\":\\\"%s\\\"}\"]", channel, sndPass);
+
+                            SeqIdPattern = Pattern.compile(SEQ_ID_PATTERN, Pattern.CASE_INSENSITIVE);
+
+							Matcher matcher = SeqIdPattern.matcher(message);
+							String seqId = null;
+
+							if ((matcher != null && matcher.find())) {
+								seqId = matcher.group(1);
+								sndPass = sndPass.replace("#"+seqId+":", "");
+								if (payload == null){
+									payload = new HashMap<>();
+								}
+								payload.put("seqId", seqId);
+							}
+
+							String messageForOrtc;
+							if (seqId != null && !seqId.equals("")){
+								messageForOrtc = String.format("a[\"{\\\"ch\\\":\\\"%s\\\",\\\"m\\\":\\\"%s\\\",\\\"s\\\":\\\"%s\\\"}\"]", channel, sndPass, seqId);
+							}else{
+								messageForOrtc = String.format("a[\"{\\\"ch\\\":\\\"%s\\\",\\\"m\\\":\\\"%s\\\"}\"]", channel, sndPass);
+							}
 
 							OrtcMessage ortcMessage = OrtcMessage.parseMessage(messageForOrtc);
 							if(extras.containsKey("P")){

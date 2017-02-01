@@ -1,17 +1,22 @@
 package ibt.ortc.plugins.IbtRealtimeSJ;
 
+import android.os.CountDownTimer;
+
+import org.json.JSONException;
 import org.json.simple.JSONValue;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import ibt.ortc.api.Strings;
 import ibt.ortc.extensibility.EventEnum;
+import ibt.ortc.extensibility.OnPublishResult;
 import ibt.ortc.extensibility.OrtcClient;
 import ibt.ortc.extensibility.exception.OrtcNotConnectedException;
 import ibt.ortc.plugins.IbtRealtimeSJ.OrtcServerErrorException.OrtcServerErrorOperation;
@@ -97,6 +102,25 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 	  heartBeatThread.start();
 	}
 
+	private void opAck(String message){
+        org.json.JSONObject json = OrtcMessage.parseJSON(message);
+
+        if (json != null && json.has("m") && json.has("seq")){
+            try {
+                HashMap pendingMsg = (HashMap)pendingPublishMessages.get((String)json.get("m"));
+                CountDownTimer timeout = (CountDownTimer)pendingMsg.get("timeout");
+                timeout.cancel();
+
+                OnPublishResult callback = (OnPublishResult)pendingMsg.get("callback");
+                callback.run(null, (String)json.get("seq"));
+
+                pendingPublishMessages.remove((String)json.get("m"));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+	}
+
 	private void addSocketEventsListener() {
 		final OrtcClient sender = this;
 		socket.setEventHandler(new WebSocketEventHandler() {
@@ -135,6 +159,9 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 									break;
 								case Received:
 									onReceived(ortcMessage);
+									break;
+								case ack:
+									opAck(message);
 									break;
 								case Error:
 									onError(ortcMessage);
@@ -253,7 +280,7 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 	private void onReceived(OrtcMessage message) {
 		raiseOrtcEvent(EventEnum.OnReceived, message.getMessageChannel(),
 				message.getMessage(), message.getMessageId(),
-				message.getMessagePart(), message.getMessageTotalParts(), message.isFiltered());
+				message.getMessagePart(), message.getMessageTotalParts(), message.isFiltered(), message.getSeqId());
 	}
 
 	@SuppressWarnings("incomplete-switch")
@@ -340,6 +367,18 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 	}
 
 	@Override
+	protected  void publish(String channel, String message, int ttl, String messagePartIdentifier, String permission){
+        String escapedMessage = JSONValue.escape(message);
+
+        String messageParsed = String.format("publish;%s;%s;%s;%s;%s;%s",
+                this.applicationKey, this.authenticationToken, channel,
+                ttl,
+                permission,
+                String.format("%s_%s", messagePartIdentifier, escapedMessage));
+        sendMessage(messageParsed);
+	}
+
+	@Override
 	protected void send(String channel, String message,
 			String messagePartIdentifier, String permission) {
 		String escapedMessage = JSONValue.escape(message);
@@ -349,6 +388,24 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 				permission,
 				String.format("%s_%s", messagePartIdentifier, escapedMessage));
 		sendMessage(messageParsed);
+	}
+
+    @Override
+    protected void sendAck(String channel, String messageId, String seqId, String asAllParts){
+        String subscribeMessage = String.format("ack;%s;%s;%s;%s;%s",
+                this.applicationKey, channel, messageId, seqId, asAllParts);
+        sendMessage(subscribeMessage);
+    }
+
+	@Override
+	protected void _subscribeWithOptions(String channel, String permission, boolean subscribeOnReconnected, boolean withNotifications,
+                                         String filter, String subscriberId){
+        String subscribeMessage = String.format("subscribeoptions;%s;%s;%s;%s;%s;%s;%s",
+                this.applicationKey, this.authenticationToken, channel, subscriberId,
+                (withNotifications ? String.format("%s;GCM", this.registrationId) : ""),
+                permission,
+                String.format("%s", (filter == null?"":filter)));
+        sendMessage(subscribeMessage);
 	}
 
 	@Override
