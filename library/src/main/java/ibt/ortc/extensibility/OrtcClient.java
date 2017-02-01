@@ -8,6 +8,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.CountDownTimer;
 import android.os.IBinder;
 
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Map;
@@ -51,8 +53,11 @@ public abstract class OrtcClient {
 	public static final int MAX_CONNECTION_METADATA_SIZE = 256;
 	protected static final int CONNECTION_TIMEOUT_DEFAULT_VALUE = 5000;
 	private static OnRegistrationId onRegistrationId;
+    private long publishTimeout;
+    protected HashMap pendingPublishMessages = new HashMap();
+    private CountDownTimer partSendInterval;
 
-	// ========== Constants ==========
+    // ========== Constants ==========
 
 	// ========== Enumerators ==========
 
@@ -504,6 +509,95 @@ public abstract class OrtcClient {
 		}
 	}
 
+	/**
+	 * Publish a message to a channel.
+	 *
+	 * @param channel
+	 *            Channel to wich the message should be sent
+	 * @param message
+	 *            The content of the message to be sent
+     * @param ttl
+     *            The message expiration time in seconds (0 for maximum allowed ttl).
+     * @param callback
+     *            Returns error if message publish was not successful or published message unique id (seqId) if sucessfully published
+	 */
+
+    public void publish(final String channel, String message, final int ttl, OnPublishResult callback) {
+        // CAUSE: Assignment to method parameter
+        final Pair<Boolean, String> sendValidation = isSendValid(channel, message);
+
+        //String lMessage = message.replace("\n", "\\n");
+
+        if (sendValidation != null && sendValidation.first) {
+            try {
+                final String messageId = Strings.randomString(8);
+
+                final ArrayList<Pair<String, String>> messagesToSend = multiPartMessage(message, messageId);
+
+                CountDownTimer ackTimeout = new CountDownTimer(this.publishTimeout, 100) {
+
+                    public void onTick(long millisUntilFinished) {
+
+                    }
+
+                    public void onFinish() {
+                        if (pendingPublishMessages.containsKey(messageId)) {
+                            String err = String.format("Message publish timeout after %l seconds", publishTimeout);
+                            if (pendingPublishMessages != null && ((HashMap) pendingPublishMessages.get(messageId)).containsKey("callback")) {
+                                OnPublishResult callbackP = (OnPublishResult) ((HashMap) pendingPublishMessages.get(messageId)).get("callback");
+                                callbackP.run(err, null);
+                                pendingPublishMessages.remove(messageId);
+                            }
+                            pendingPublishMessages.remove(messageId);
+                        }
+                    }
+
+                }.start();
+
+                Map pendingMsg = new HashMap();
+                pendingMsg.put("totalNumOfParts", messagesToSend.size());
+                pendingMsg.put("callback", callback);
+                pendingMsg.put("timeout", ackTimeout);
+
+                this.pendingPublishMessages.put(messageId, pendingMsg);
+
+
+                if (messagesToSend.size() < 20) {
+                    for (Pair<String, String> messageToSend : messagesToSend) {
+                        publish(channel, messageToSend.second, ttl, messageToSend.first,
+                                sendValidation.second);
+                    }
+                } else {
+                    partSendInterval = new CountDownTimer(messagesToSend.size() * 100, 100) {
+                        int partsSent = 0;
+
+                        public void onTick(long millisUntilFinished) {
+                            int currentPart = partsSent + 1;
+                            if (isConnected) {
+
+                                Pair<String, String> messageToSend = messagesToSend.get(currentPart);
+                                publish(channel, messageToSend.second, ttl, messageToSend.first,
+                                        sendValidation.second);
+
+
+                                partsSent++;
+                            }
+                        }
+
+                        public void onFinish() {
+
+                        }
+                    }.start();
+                }
+            }catch(IOException e){
+                raiseOrtcEvent(EventEnum.OnException, this, e);
+            }
+        }
+    }
+
+	protected abstract void publish(String channel, String message, int ttl, String messagePartIdentifier, String permission);
+
+
 	private ArrayList<Pair<String, String>> multiPartMessage(String message,
 			String messageId) throws IOException {
 		// CAUSE: Reliance on default encoding
@@ -600,6 +694,113 @@ public abstract class OrtcClient {
 		return result;
 	}
 
+    /**
+     * Subscribes to a channel to receive messages published to it.
+     *
+     * @param channel
+     *          The channel name.
+     * @param subscriberId
+     *          The subscriberId associated to the channel.
+     * @param OnMessageWithBuffer
+     *          The callback called when a message arrives at the channel and message seqId number.
+     */
+    public void subscribeWithBuffer(String channel, String subscriberId, final OnMessageWithBuffer onMessage){
+        if (subscriberId != null) {
+            HashMap options = new HashMap();
+            options.put("channel", channel);
+            options.put("subscribeOnReconnected", true);
+            options.put("subscriberId", subscriberId);
+
+            this.subscribeWithOptions(options, new OnMessageWithOptions() {
+                @Override
+                public void run(OrtcClient sender, Map msgOptions) {
+                    if (msgOptions.containsKey("channel") && msgOptions.containsKey("message")) {
+                        final String channel = (String) msgOptions.get("channel");
+                        final String message = (String) msgOptions.get("message");
+                        final String seqId = (String) msgOptions.get("seqId");
+
+                        onMessage.run(sender, channel, seqId, message);
+                    }
+                }
+            });
+        }else{
+            raiseOrtcEvent(
+                    EventEnum.OnException,
+                    this,
+                    new OrtcGcmException(
+                            "subscribeWithBuffer called with no subscriberId"));
+        }
+    }
+
+    /**
+     * Subscribes to a channel to receive messages sent to it with given options.
+     *
+     * @param options
+     *          The subscription options dictionary, EX: "options = {
+     * channel,
+     * subscribeOnReconnected, // optional, default = true,
+     * withNotifications (Bool), // optional, default = false, use push notifications as in subscribeWithNotifications
+     * filter, // optional, default = "", the subscription filter as in subscribeWithFilter
+     * subscriberId // optional, default = "", the subscriberId as in subscribeWithBuffer
+     * }".
+     * @param onMessage
+     *          The callback called when a message arrives at the channel, data is provided in a dictionary.
+     */
+    public void subscribeWithOptions(Map options, OnMessageWithOptions onMessage){
+        if(options != null){
+            String channel = null;
+            Boolean subscribeOnReconnected = true;
+            Boolean withNotifications = false;
+            Boolean withFilter = false;
+            String filter = null;
+            String subscriberId = null;
+
+            if (options.containsKey("channel")){
+                channel = (String) options.get("channel");
+            }
+            if (options.containsKey("subscribeOnReconnected")){
+                subscribeOnReconnected = (Boolean) options.get("subscribeOnReconnected");
+            }
+            if (options.containsKey("withNotifications")){
+                withNotifications = (Boolean) options.get("withNotifications");
+            }
+            if (options.containsKey("filter")){
+                filter = (String) options.get("filter");
+            }
+            if (options.containsKey("subscriberId")){
+                subscriberId = (String) options.get("subscriberId");
+            }
+
+            ChannelSubscription subscribedChannel = subscribedChannels.get(channel);
+            Pair<Boolean, String> subscribeValidation = isSubscribeValid(channel,
+                    subscribedChannel, withNotifications);
+
+            if (subscribeValidation != null && subscribeValidation.first) {
+                if (withNotifications) {
+                    if (this.registrationId.isEmpty()) {
+                        raiseOrtcEvent(
+                                EventEnum.OnException,
+                                this,
+                                new OrtcGcmException(
+                                        "The application is not registered with GCM yet!"));
+                        return;
+                    }
+                }
+                subscribedChannel = new ChannelSubscription(subscribeOnReconnected,
+                        onMessage, withNotifications, true, subscriberId, withFilter, filter);
+                subscribedChannel.setSubscribing(true);
+                subscribedChannels.put(channel, subscribedChannel);
+
+                this._subscribeWithOptions(channel,subscribeValidation.second, subscribeOnReconnected, withNotifications, filter, subscriberId);
+            }
+        }else{
+            raiseOrtcEvent(
+                    EventEnum.OnException,
+                    this,
+                    new OrtcSubscribedException(String.format(
+                            "subscribeWithOptions called with no options")));
+        }
+    }
 
 	/**
 	 * Subscribe the specified channel in order to receive messages in that
@@ -660,13 +861,18 @@ public abstract class OrtcClient {
 				}
 			}
 			subscribedChannel = new ChannelSubscription(subscribeOnReconnect,
-					onMessage, withNotification, withFilter, filter);
+					onMessage, withNotification, false, null, withFilter, filter);
 			subscribedChannel.setSubscribing(true);
 			subscribedChannels.put(channel, subscribedChannel);
 
 			subscribe(channel, subscribeValidation.second, withNotification, withFilter, filter);
 		}
 	}
+
+    protected abstract void _subscribeWithOptions(String channel, String permission, boolean subscribeOnReconnected, boolean withNotifications,
+                                                  String filter,String subscriberId);
+
+    protected abstract void sendAck(String channel, String messageId, String seqId, String asAllParts);
 
 	protected abstract void subscribe(String channel, String permission,
 			boolean withNotification, boolean withFilter, String filter);
@@ -1241,8 +1447,17 @@ public abstract class OrtcClient {
 						channelName, ChannelPermission.Read);
 
 				if (channelPermission != null && channelPermission.first) {
-					subscribe(channelName, channelPermission.second,
-							subscribedChannel.isWithNotification(), subscribedChannel.isWithFilter(), subscribedChannel.getFilter());
+					if (subscribedChannel.isWithOptions() == true){
+						_subscribeWithOptions(channelName,
+                                channelPermission.second,
+                                subscribedChannel.subscribeOnReconnected(),
+                                subscribedChannel.isWithNotification(),
+                                subscribedChannel.getFilter(),
+                                subscribedChannel.getSubscriberId());
+					}else{
+					    subscribe(channelName, channelPermission.second,
+						    	subscribedChannel.isWithNotification(), subscribedChannel.isWithFilter(), subscribedChannel.getFilter());
+                    }
 				} else{
                     subscribedChannel.setSubscribing(false);
                 }
@@ -1321,85 +1536,91 @@ public abstract class OrtcClient {
 		subscribedChannels.remove(channel);
 	}
 
-	private void raiseOnReceived(Object... args) {
-		String channel = args != null && args.length >= 5 ? (String) args[0]
-				: null;
-		String message = args != null && args.length >= 5 ? (String) args[1]
-				: null;
-		String messageId = args != null && args.length >= 5 ? (String) args[2]
-				: null;
+    private void raiseOnReceived(Object... args) {
+        String channel = args != null && args.length >= 5 ? (String) args[0]
+                : null;
+        String message = args != null && args.length >= 5 ? (String) args[1]
+                : null;
+        String messageId = args != null && args.length >= 5 ? (String) args[2]
+                : null;
 
-		// CAUSE: Possible null pointer dereference
-		Integer messagePart = args != null && args.length >= 5 ? (Integer) args[3]
-				: null;
-		// CAUSE: Possible null pointer dereference
-		Integer messageTotalParts = args != null && args.length >= 5 ? (Integer) args[4]
-				: null;
+        // CAUSE: Possible null pointer dereference
+        Integer messagePart = args != null && args.length >= 5 ? (Integer) args[3]
+                : null;
+        // CAUSE: Possible null pointer dereference
+        Integer messageTotalParts = args != null && args.length >= 5 ? (Integer) args[4]
+                : null;
 
-        boolean filtered = args != null && args.length == 6 ? (boolean) args[5] : false;
+        Object filtered = args != null && args.length == 6 ? args[5] : null;
 
 
-		Map<String, Object> payload = args != null && args.length == 7 ? (Map<String, Object>) args[6]
-				: null;
+        Object payload = args != null && args.length == 7 ? args[6]
+                : null;
 
-		if ((messagePart != null && messagePart == -1
-				|| (messagePart != null && messageTotalParts != null)
-				&& (messagePart == 1 && messageTotalParts == 1)) || messageId == null) {
-			ChannelSubscription subscription = subscribedChannels.get(channel);
-			if (subscription != null) {
-				boolean isAlreadyDispatched = false;
-				if (messageId != null) {
-					isAlreadyDispatched = dispatchedMessages
-							.checkIfDispatched(messageId);
-				}
-				if (!isAlreadyDispatched) {
-					if (messageId != null)
-						dispatchedMessages.addMessageId(messageId);
-					//OnMessage onMessageEventHandler = subscription.getOnMessage();
-					//if (onMessageEventHandler != null) {
-						message = CharEscaper.removeEsc(message);
-						//onMessageEventHandler.run(this, channel, message);
-						subscription.runHandler(this, channel, message, filtered, payload);
-						try {
-							if (messageId != null
-									&& multiPartMessagesBuffer
-											.containsKey(messageId)) {
-								multiPartMessagesBuffer.remove(messageId);
-							}
-						} catch (Exception e) {
-							raiseOrtcEvent(EventEnum.OnException, this, e);
-						}
-					//}
-				}
-			}
-		} else {
-			if (!multiPartMessagesBuffer.containsKey(messageId)) {
-				multiPartMessagesBuffer.put(messageId,
-						new LinkedList<BufferedMessage>());
-			}
+        if ((messagePart != null && messagePart == -1
+                || (messagePart != null && messageTotalParts != null)
+                && (messagePart == 1 && messageTotalParts == 1)) || messageId == null) {
+            ChannelSubscription subscription = subscribedChannels.get(channel);
+            if (subscription != null) {
+                boolean isAlreadyDispatched = false;
+                if (messageId != null) {
+                    isAlreadyDispatched = dispatchedMessages
+                            .checkIfDispatched(messageId);
+                }
+                if (!isAlreadyDispatched) {
+                    if (messageId != null)
+                        dispatchedMessages.addMessageId(messageId);
+                    //OnMessage onMessageEventHandler = subscription.getOnMessage();
+                    //if (onMessageEventHandler != null) {
+                    //message = CharEscaper.removeEsc(message);
+                    //onMessageEventHandler.run(this, channel, message);
+                    subscription.runHandler(this, channel, message, filtered, payload);
+                    if (messageId != null && payload != null && payload instanceof String){
+                        sendAck(channel, messageId, (String) payload, "1");
+                    }
+                    try {
+                        if (messageId != null
+                                && multiPartMessagesBuffer
+                                .containsKey(messageId)) {
+                            multiPartMessagesBuffer.remove(messageId);
+                        }
+                    } catch (Exception e) {
+                        raiseOrtcEvent(EventEnum.OnException, this, e);
+                    }
+                    //}
+                }
+            }
+        } else {
+            if (!multiPartMessagesBuffer.containsKey(messageId)) {
+                multiPartMessagesBuffer.put(messageId,
+                        new LinkedList<BufferedMessage>());
+            }
 
-			// CAUSE: Possible null pointer dereference
-			if (multiPartMessagesBuffer.get(messageId) != null) {
-				multiPartMessagesBuffer.get(messageId).add(
-						new BufferedMessage(messagePart, message));
-			}
+            // CAUSE: Possible null pointer dereference
+            if (multiPartMessagesBuffer.get(messageId) != null) {
+                multiPartMessagesBuffer.get(messageId).add(
+                        new BufferedMessage(messagePart, message));
+            }
 
-			LinkedList<BufferedMessage> messageParts = multiPartMessagesBuffer
-					.get(messageId);
-			// CAUSE: Possible null pointer dereference
-			if (messageParts != null
-					&& messageParts.size() == messageTotalParts) {
-				Collections.sort(messageParts);
-				String fullMessage = "";
-				for (BufferedMessage part : messageParts) {
-					fullMessage = String.format("%s%s", fullMessage,
-							part.getContent());
-				}
-				raiseOnReceived(channel, fullMessage, messageId, -1, -1);
-			}
-		}
+            LinkedList<BufferedMessage> messageParts = multiPartMessagesBuffer
+                    .get(messageId);
+            // CAUSE: Possible null pointer dereference
+            if (messageParts != null
+                    && messageParts.size() == messageTotalParts) {
+                Collections.sort(messageParts);
+                String fullMessage = "";
+                for (BufferedMessage part : messageParts) {
+                    fullMessage = String.format("%s%s", fullMessage,
+                            part.getContent());
+                }
 
-	}
+                raiseOnReceived(channel, fullMessage, messageId, -1, -1, filtered, payload);
+            }
+        }
+        if (messageId != null && payload != null && payload instanceof String){
+            sendAck(channel, messageId, (String) payload, "0");
+        }
+    }
 
 	/**
 	 * Get if heartbeat active.

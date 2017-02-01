@@ -2,9 +2,9 @@ package ibt.ortc.ortclib;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
-import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
@@ -28,6 +28,7 @@ import ibt.ortc.extensibility.OnDisconnected;
 import ibt.ortc.extensibility.OnException;
 import ibt.ortc.extensibility.OnMessage;
 import ibt.ortc.extensibility.OnMessageWithPayload;
+import ibt.ortc.extensibility.OnPublishResult;
 import ibt.ortc.extensibility.OnReconnected;
 import ibt.ortc.extensibility.OnReconnecting;
 import ibt.ortc.extensibility.OnRegistrationId;
@@ -121,7 +122,6 @@ public class MainActivity extends ActionBarActivity {
                 }
             });
 
-            client.setGoogleProjectId("[enter your GCM project id]");
 
             Ortc.setOnPushNotification(new OnMessageWithPayload() {
                 @Override
@@ -309,7 +309,6 @@ public class MainActivity extends ActionBarActivity {
 
     }
 
-
     public void clearClickEventHandler(View v) {
         TextView textViewLog = (TextView) findViewById(R.id.TextViewLog);
         textViewLog.setText("");
@@ -318,6 +317,50 @@ public class MainActivity extends ActionBarActivity {
 
     private void subscribe() {
         log("Subscribing...");
+
+//        HashMap options = new HashMap();
+//        options.put("channel", channel);
+//        options.put("withNotifications",true);
+//        options.put("subscriberId","testeph");
+//
+//        client.subscribeWithOptions(options, new OnMessageWithOptions() {
+//            @Override
+//            public void run(OrtcClient sender, Map msgOptions) {
+//                if (msgOptions.containsKey("channel") && msgOptions.containsKey("message")){
+//                    final String channel = (String)msgOptions.get("channel");
+//                    final String message = (String)msgOptions.get("message");
+//                    final String seqId = (String)msgOptions.get("seqId");
+//
+//                    runOnUiThread(new Runnable() {
+//                        public void run() {
+//                            log(String.format("Message on channel %s: %s: seqId:%s", channel, message, seqId));
+//                        }
+//                    });
+//                }
+//            }
+//        });
+
+//        client.subscribeWithBuffer(channel, "teste1", new OnMessageWithBuffer() {
+//            @Override
+//            public void run(OrtcClient sender, final String channel, final String seqId, final String message) {
+//                runOnUiThread(new Runnable() {
+//                    public void run() {
+//                        log(String.format("Message on channel %s: %s: seqId:%s", channel, message, seqId));
+//                    }
+//                });
+//            }
+//        });
+//
+//        client.subscribe(channel, true, new OnMessage() {
+//            @Override
+//            public void run(OrtcClient sender, String channel, String message) {
+//                runOnUiThread(new Runnable() {
+//                    public void run() {
+//                        log(String.format("Message on channel %s: %s:", channel, message));
+//                    }
+//                });
+//            }
+//        });
 
         client.subscribeWithNotifications(channel, true,
                 new OnMessage() {
