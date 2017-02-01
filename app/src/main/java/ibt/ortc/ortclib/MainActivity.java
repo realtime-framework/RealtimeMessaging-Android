@@ -28,7 +28,6 @@ import ibt.ortc.extensibility.OnDisconnected;
 import ibt.ortc.extensibility.OnException;
 import ibt.ortc.extensibility.OnMessage;
 import ibt.ortc.extensibility.OnMessageWithPayload;
-import ibt.ortc.extensibility.OnPublishResult;
 import ibt.ortc.extensibility.OnReconnected;
 import ibt.ortc.extensibility.OnReconnecting;
 import ibt.ortc.extensibility.OnRegistrationId;
@@ -122,6 +121,7 @@ public class MainActivity extends ActionBarActivity {
                 }
             });
 
+            client.setGoogleProjectId("[enter your GCM project id]");
 
             Ortc.setOnPushNotification(new OnMessageWithPayload() {
                 @Override
