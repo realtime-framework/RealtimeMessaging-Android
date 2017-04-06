@@ -1390,8 +1390,8 @@ public abstract class OrtcClient {
 						&& args.length == 1 ? args[0] : null);
 
 				onConnected.run(sender);
-				startHeartBeatInterval();
 			}
+			startHeartBeatInterval();
 		}
 
 	}
@@ -1474,8 +1474,8 @@ public abstract class OrtcClient {
 			OrtcClient sender = (OrtcClient) (args != null && args.length == 1 ? args[0]
 					: null);
 			onReconnected.run(sender);
-			startHeartBeatInterval();
 		}
+		startHeartBeatInterval();
 	}
 
 	private void raiseOnReconnecting(Object... args) {
