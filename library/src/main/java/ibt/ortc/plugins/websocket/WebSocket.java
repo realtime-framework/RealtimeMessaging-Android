@@ -17,23 +17,23 @@
 package ibt.ortc.plugins.websocket;
 
 import android.util.Log;
-import static android.util.Log.DEBUG;
 
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.net.URI;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
+
+import static android.util.Log.DEBUG;
 
 
 public class WebSocket
@@ -89,7 +89,7 @@ public class WebSocket
 		return this.eventHandler;
 	}
 
-	public void connect() throws WebSocketException
+	public void connect() throws Exception
 	{
 		try {
 			if (connected) {

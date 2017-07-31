@@ -7,7 +7,6 @@ import org.json.simple.JSONValue;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Random;
@@ -58,9 +57,7 @@ public final class IbtRealtimeSJClient extends OrtcClient {
 			addSocketEventsListener();
 
 			socket.connect();
-		} catch (WebSocketException e) {
-			ex = true;
-		} catch (URISyntaxException e) {
+		} catch (Exception e) {
 			ex = true;
 		} finally {
 			if (ex) {
