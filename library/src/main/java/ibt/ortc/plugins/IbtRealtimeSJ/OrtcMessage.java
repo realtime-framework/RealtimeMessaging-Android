@@ -286,7 +286,8 @@ public class OrtcMessage {
             throw new Exception("Exception match not found");
         }
 
-        String content = matcher.group(1).replace("\\\"", "\"");        
+        String content = matcher.group(1).replace("\\\"", "\"");
+        content = content.replace("\\\"", "\"");
 
         JSONObject json = (JSONObject) (JSONValue.parse(content));
 
